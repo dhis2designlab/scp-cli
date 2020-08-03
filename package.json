@@ -1,0 +1,35 @@
+{
+    "name": "scp-boilerplate",
+    "version": "1.0.0",
+    "description": "This NPM package helps you to create NPM packages with React components that can be used to build DHIS2 apps or other components.",
+    "main": "src/index.js",
+    "bin": {
+        "dhis2-scp-cli": "src/cli.js"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node src/cli.js",
+        "lint": "eslint"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/haheskja/scp-boilerplate.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/haheskja/scp-boilerplate/issues"
+    },
+    "homepage": "https://github.com/haheskja/scp-boilerplate#readme",
+    "devDependencies": {
+        "cross-env": "^7.0.2",
+        "eslint": "^7.6.0",
+        "jest": "^26.2.2"
+    },
+    "dependencies": {
+        "consola": "^2.14.0",
+        "debug": "^4.1.1",
+        "npm-run-all": "^4.1.5",
+        "yargs": "^15.4.1"
+    }
+}
