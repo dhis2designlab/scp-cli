@@ -5,6 +5,7 @@ const __file__ = pathm.basename(__filename);
 const consola = require("consola");
 const yargs = require("yargs");
 const debugm = require("debug");
+const chalk = require("chalk");
 const debug = debugm(`scp:${__file__}`);
 const fsm = require("fs");
 const fsmp = fsm.promises;
@@ -42,13 +43,13 @@ async function handler(argv) {
     }
     if (errors.length) {
         for (const error of errors) {
-            consola.error(`Found error: ${error.text}`);
+            consola.error(chalk.red(`Found error: ${error.text}`));
         }
         process.exitCode = 1;
     } else {
-        consola.info(`Verification passed`);
+        consola.info(chalk.green(`Verification passed`));
         process.exitCode = 0;
     }
 }
 
-Object.assign(module.exports, { command, describe, builder, handler });
+Object.assign(module.exports, { command, describe, builder, handler});

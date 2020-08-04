@@ -7,10 +7,22 @@ const debugm = require("debug");
 const debug = debugm(`scp:${__file__}`);
 const consola = require("consola");
 const yargs = require("yargs");
+const chalk = require("chalk");
+const boxen = require("boxen");
 consola._stdout = process.stderr;
 const verifyCommand = require("./cli-verify");
+const greeting = chalk.white.bold('DHIS2-SCP-CLI');
+const boxenOptions = {
+  padding: 1,
+  margin: 1,
+  borderStyle: "round",
+  borderColor: "magenta",
+  backgroundColor: "#000"
+ };
+ const msgBox = boxen( greeting, boxenOptions );
 
 async function main() {
+  consola.info(msgBox);
   const middleware = (args) => {
     consola.level += args.verbose;
     debug(`entry:`, { args, level: consola.level });
