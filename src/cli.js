@@ -33,6 +33,17 @@ async function main() {
     .command(verifyCommand)
     .help("h")
     .alias("help", "h")
+    /*
+    .fail((msg, error, yargs) => {
+      if ( error ) {
+        consola.error(`error =`, error);
+        process.exit(1);
+      }
+      else {
+        console.error(msg);
+      }
+    })
+    */
     .option("verbose", {
       alias: "v",
       describe: "increase verbosity",
