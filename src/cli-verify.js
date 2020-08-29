@@ -72,7 +72,7 @@ async function handler(argv) {
         const results = await pspawn("eslint", [packageDir], {stdio: "inherit", shell: true});
         const { code, signal, stdout, stderr, error } = results;
         if ( error || code !== 0 ) {
-            consola.error(`Failure when linting package directory ${packageDir}: failed with ${error || code}`);
+            errors.push({ text: `Failure when linting package directory ${packageDir}: failed with ${error || code}`});
         }
     }
 
