@@ -1,4 +1,4 @@
-# scp-boilerplate
+# scp-cli
 
 This NPM package helps you to create NPM packages with React components that can be used to build DHIS2 apps or other components.
 
