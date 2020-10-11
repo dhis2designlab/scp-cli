@@ -3,7 +3,7 @@
 const pathm = require("path");
 const __file__ = pathm.basename(__filename);
 const consola = require("consola");
-const {ESLint} = require("eslint");
+const { ESLint } = require("eslint");
 const yargs = require("yargs");
 const debugm = require("debug");
 const chalk = require("chalk");
@@ -45,14 +45,14 @@ function pspawn(...args) {
             consola.debug(`cp error, args = `, args);
             resolve(["error", ...args])
         })
-    }).then((result)=>{
+    }).then((result) => {
         consola.debug(`result =`, result);
         const resolveType = result[0];
-        if ( resolveType === "close" ) {
-            const [ _, code, signal ] = result;
+        if (resolveType === "close") {
+            const [_, code, signal] = result;
             return { code, signal, stdout, stderr, error: undefined };
         } else {
-            const [ _, error ] = result; 
+            const [_, error] = result;
             return { code: undefined, signal: undefined, stdout, stderr, error };
         }
     })
@@ -67,7 +67,9 @@ async function handler(argv) {
     const packageJson = JSON.parse(packageJsonString);
     consola.debug(`packageJson =`, packageJson);
     const errors = [];
+    const specifiedComponents = [];
 
+    /* Turning linting off for now
     {
         const results = await pspawn("eslint", [packageDir], {stdio: "inherit", shell: true});
         const { code, signal, stdout, stderr, error } = results;
@@ -75,6 +77,9 @@ async function handler(argv) {
             errors.push({ text: `Failure when linting package directory ${packageDir}: failed with ${error || code}`});
         }
     }
+    */
+
+    componentHandler(packageJson, errors, specifiedComponents);
 
     if (packageJson.hasOwnProperty("keywords")) {
         consola.debug(`Found keywords in package.json`);
@@ -98,4 +103,27 @@ async function handler(argv) {
     }
 }
 
-Object.assign(module.exports, { command, describe, builder, handler});
+
+async function componentHandler(packageJson, errors, specifiedComponents) {
+    if (packageJson.hasOwnProperty(constants.components)) {
+        const componentsList = packageJson[constants.components];
+        if (!(componentsList === undefined || componentsList.length == 0)) {
+            for (let i = 0; i < componentsList.length; i++) {
+                let key = componentsList[i].export;
+                specifiedComponents[key] = {
+                    name: componentsList[i].name,
+                    description: componentsList[i].description
+                };
+            }
+            consola.debug(`Listed components`, specifiedComponents);
+        } else {
+            // Rather a warning, than an error
+            // errors.push({ text: `Components are not listed in package.json` });
+            consola.warn(`package.json includes ${constants.components} field, but the list is empty`);
+        }
+    } else {
+        errors.push({ text: `package.json does not include ${constants.components} field` });
+    }
+}
+
+Object.assign(module.exports, { command, describe, builder, handler });
