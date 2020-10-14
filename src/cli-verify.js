@@ -14,6 +14,8 @@ const constants = require("./constants");
 const utilm = require("util");
 const cpm = require("child_process");
 
+
+
 const cpmp = {
     exec: utilm.promisify(cpm.exec),
 }
@@ -58,15 +60,27 @@ function pspawn(...args) {
     })
 }
 
+class ErrorList {
+
+    constructor() {
+        this.list = []
+    }
+
+    push(text, options) {
+        consola.debug(`Pushing error: ${text}`);
+        this.list.push({text});
+    }
+}
+
 async function handler(argv) {
     consola.debug(`entry: argv =`, argv);
-    const packageDir = argv["package-dir"] || ".";
+    const packageDir = argv["package-dir"] || "./";
     const packageJsonFile = pathm.join(packageDir, "package.json");
     consola.debug(`packageJsonFile = ${packageJsonFile}`);
     const packageJsonString = await fsmp.readFile(packageJsonFile);
     const packageJson = JSON.parse(packageJsonString);
     consola.debug(`packageJson =`, packageJson);
-    const errors = [];
+    const errors = new ErrorList();
     const specifiedComponents = [];
 
     /* Turning linting off for now
@@ -78,22 +92,34 @@ async function handler(argv) {
         }
     }
     */
+    const package = require(pathm.resolve(packageDir));
 
-    componentHandler(packageJson, errors, specifiedComponents);
+    const packageDetails = {
+        packageJson,
+        packageDir,
+        package
+    };
+    try {
+        componentHandler(packageDetails, errors, specifiedComponents);
+    } catch (error) {
+        errors.push(`keyword ${constants.keyword} is not specified in package.json`);
+    }
+    
 
+    
     if (packageJson.hasOwnProperty("keywords")) {
         consola.debug(`Found keywords in package.json`);
         const keywords = packageJson["keywords"];
         if (keywords.indexOf(constants.keyword) >= 0) {
             consola.debug(`Found dhis2 keyword`);
         } else {
-            errors.push({ text: `keyword ${constants.keyword} is not specified in package.json` });
+            errors.push(`keyword ${constants.keyword} is not specified in package.json`);
         }
     } else {
-        errors.push({ text: `package.json does not have any keywords, and needs ${constants.keyword}` });
+        errors.push(`package.json does not have any keywords, and needs ${constants.keyword}`);
     }
-    if (errors.length) {
-        for (const error of errors) {
+    if (errors.list.length) {
+        for (const error of errors.list) {
             consola.error(chalk.red(`Found error: ${error.text}`));
         }
         process.exitCode = 1;
@@ -104,26 +130,45 @@ async function handler(argv) {
 }
 
 
-async function componentHandler(packageJson, errors, specifiedComponents) {
+async function componentHandler(packageDetails, errors, specifiedComponents) {
+    const { package, packageJson, packageDir } = packageDetails;
+    
     if (packageJson.hasOwnProperty(constants.components)) {
         const componentsList = packageJson[constants.components];
         if (!(componentsList === undefined || componentsList.length == 0)) {
             for (let i = 0; i < componentsList.length; i++) {
-                let key = componentsList[i].export;
-                specifiedComponents[key] = {
-                    name: componentsList[i].name,
-                    description: componentsList[i].description
-                };
+                try {
+                    let componentsListItem = componentsList[i];
+                    for ( const key of ["export", "name", "description"] ) {
+                        if ( !componentsListItem.hasOwnProperty(key) ) {
+                            errors.push(`package.json ${constants.components}[${i}] does not have the "${key}" property`);
+                            continue;
+                        }
+                        if ( typeof( componentsListItem[key] ) !== "string" ) {
+                            errors.push(`package.json ${constants.components}[${i}] property "${key}" must be a string`);
+                            continue;
+                        }
+                    }
+                    const { export: key, name, description } = componentsListItem;
+                    if (!package.hasOwnProperty(key)) {
+                        errors.push(`package.json ${constants.components}[${i}] specified export "${key}" is not exported from the package`);
+                        continue;
+                    }
+                    consola.debug(`Found export "${key}" specified in ${constants.components}[${i}]: `, {name, description});
+                    specifiedComponents[key] = { name, description };
+                } catch (error) {
+                    errors.push(`problem when processing package.json ${constants.components}[${i}]: ${error}`);
+                }
             }
-            consola.debug(`Listed components`, specifiedComponents);
         } else {
             // Rather a warning, than an error
             // errors.push({ text: `Components are not listed in package.json` });
             consola.warn(`package.json includes ${constants.components} field, but the list is empty`);
         }
     } else {
-        errors.push({ text: `package.json does not include ${constants.components} field` });
+        errors.push(`package.json does not include ${constants.components} field`);
     }
 }
+
 
 Object.assign(module.exports, { command, describe, builder, handler });
