@@ -18,8 +18,8 @@ const boxenOptions = {
   borderStyle: "round",
   borderColor: "magenta",
   backgroundColor: "#000"
- };
- const msgBox = boxen( greeting, boxenOptions );
+};
+const msgBox = boxen(greeting, boxenOptions);
 
 async function main() {
   consola.info(msgBox);

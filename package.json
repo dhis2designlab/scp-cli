@@ -7,9 +7,18 @@
         "dhis2-scp-cli": "src/cli.js"
     },
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "test": "jest --env=node --colors --coverage",
         "start": "node src/cli.js",
         "lint": "eslint"
+    },
+    "jest": {
+        "verbose": true,
+        "testEnvironment": "node",
+        "coveragePathIgnorePatterns": [
+            "<rootDir>/dist/",
+            "<rootDir>/node_modules/",
+            "<rootDir>/src/constants.js"
+        ]
     },
     "repository": {
         "type": "git",
@@ -24,7 +33,7 @@
     "devDependencies": {
         "cross-env": "^7.0.2",
         "eslint": "^7.6.0",
-        "jest": "^26.2.2"
+        "jest": "^26.5.3"
     },
     "dependencies": {
         "boxen": "^4.2.0",

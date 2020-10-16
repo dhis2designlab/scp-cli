@@ -68,7 +68,7 @@ class ErrorList {
 
     push(text, options) {
         consola.debug(`Pushing error: ${text}`);
-        this.list.push({text});
+        this.list.push({ text });
     }
 }
 
@@ -92,21 +92,21 @@ async function handler(argv) {
         }
     }
     */
-    const package = require(pathm.resolve(packageDir));
+    const package_ = require(pathm.resolve(packageDir));
 
     const packageDetails = {
         packageJson,
         packageDir,
-        package
+        package_
     };
     try {
         componentHandler(packageDetails, errors, specifiedComponents);
     } catch (error) {
         errors.push(`keyword ${constants.keyword} is not specified in package.json`);
     }
-    
 
-    
+
+
     if (packageJson.hasOwnProperty("keywords")) {
         consola.debug(`Found keywords in package.json`);
         const keywords = packageJson["keywords"];
@@ -131,39 +131,40 @@ async function handler(argv) {
 
 
 async function componentHandler(packageDetails, errors, specifiedComponents) {
-    const { package, packageJson, packageDir } = packageDetails;
-    
+    const { package_, packageJson, packageDir } = packageDetails;
     if (packageJson.hasOwnProperty(constants.components)) {
         const componentsList = packageJson[constants.components];
         if (!(componentsList === undefined || componentsList.length == 0)) {
             for (let i = 0; i < componentsList.length; i++) {
                 try {
                     let componentsListItem = componentsList[i];
-                    for ( const key of ["export", "name", "description"] ) {
-                        if ( !componentsListItem.hasOwnProperty(key) ) {
-                            errors.push(`package.json ${constants.components}[${i}] does not have the "${key}" property`);
+                    for (const key of ["export", "name", "description"]) {
+                        if (!componentsListItem.hasOwnProperty(key)) {
+                            errors.push(`one of the components does not have the "${key}" property`);
                             continue;
                         }
-                        if ( typeof( componentsListItem[key] ) !== "string" ) {
-                            errors.push(`package.json ${constants.components}[${i}] property "${key}" must be a string`);
+                        if (componentsListItem[key] === "") {
+                            errors.push(`property "${key}" is empty`);
+                            continue;
+                        }
+                        if (typeof (componentsListItem[key]) !== "string") {
+                            errors.push(`property "${key}" must be a string`);
                             continue;
                         }
                     }
                     const { export: key, name, description } = componentsListItem;
-                    if (!package.hasOwnProperty(key)) {
+                    if (!package_.hasOwnProperty(key)) {
                         errors.push(`package.json ${constants.components}[${i}] specified export "${key}" is not exported from the package`);
                         continue;
                     }
-                    consola.debug(`Found export "${key}" specified in ${constants.components}[${i}]: `, {name, description});
+                    consola.debug(`Found export "${key}" specified in ${constants.components}[${i}]: `, { name, description });
                     specifiedComponents[key] = { name, description };
                 } catch (error) {
                     errors.push(`problem when processing package.json ${constants.components}[${i}]: ${error}`);
                 }
             }
         } else {
-            // Rather a warning, than an error
-            // errors.push({ text: `Components are not listed in package.json` });
-            consola.warn(`package.json includes ${constants.components} field, but the list is empty`);
+            errors.push(`package.json includes ${constants.components} field, but the list is empty`);
         }
     } else {
         errors.push(`package.json does not include ${constants.components} field`);
@@ -171,4 +172,5 @@ async function componentHandler(packageDetails, errors, specifiedComponents) {
 }
 
 
-Object.assign(module.exports, { command, describe, builder, handler });
+module.exports = componentHandler;
+Object.assign(module.exports, { command, describe, builder, handler});
