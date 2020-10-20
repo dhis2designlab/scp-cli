@@ -6,7 +6,7 @@ const __file__ = pathm.basename(__filename);
 const debugm = require("debug");
 const debug = debugm(`scp:${__file__}`);
 const consola = require("consola");
-const yargs = require("yargs");
+import yargs from "yargs";
 const chalk = require("chalk");
 const boxen = require("boxen");
 consola._stdout = process.stderr;
@@ -23,7 +23,7 @@ const msgBox = boxen(greeting, boxenOptions);
 
 async function main() {
   consola.info(msgBox);
-  const middleware = (args) => {
+  const middleware = (args: yargs.Arguments<any>) => {
     consola.level += args.verbose;
     debug(`entry:`, { args, level: consola.level });
   };

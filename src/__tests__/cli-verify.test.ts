@@ -1,6 +1,6 @@
 const consola = require('consola');
-const componentHandler = require('../src/cli-verify');
-const packageDir = '../src';
+const componentHandler = require('../../src/cli-verify');
+const packageDir = '../../src';
 const package_ = {
     helloWorld: function () {
         /* eslint-disable no-console */
@@ -8,15 +8,19 @@ const package_ = {
         /* eslint-enable no-console */
     }
 }
-const constants = require("../src/constants");
+const constants = require("../../src/constants");
+
+interface ErrorItem {
+    text: string;
+}
 
 class ErrorList {
-
+    list: ErrorItem[];
     constructor() {
         this.list = []
     }
 
-    push(text, options) {
+    push(text: string, options?: {}) {
         consola.debug(`Pushing error: ${text}`);
         this.list.push({ text });
     }
@@ -32,13 +36,13 @@ test('Correct Package.json structure', () => {
             }
         ]
     };
-    const expected = [];
+    const expected: any = [];
     expected['helloWorld'] = {
         "name": "Hello World",
         "description": "Greeting component"
     };
     const errors = new ErrorList();
-    const specifiedComponents = [];
+    const specifiedComponents: any = [];
     const packageDetails = {
         packageJson,
         packageDir,
@@ -62,7 +66,7 @@ test(`Missing keyword ${constants.components}`, () => {
     const expected = new ErrorList();
     expected.push(`package.json does not include ${constants.components} field`);
     const errors = new ErrorList();
-    const specifiedComponents = [];
+    const specifiedComponents: any = [];
     const packageDetails = {
         packageJson,
         packageDir,
@@ -81,7 +85,7 @@ test(`Empty array with components ${constants.components}`, () => {
     const expected = new ErrorList();
     expected.push(`package.json includes ${constants.components} field, but the list is empty`);
     const errors = new ErrorList();
-    const specifiedComponents = [];
+    const specifiedComponents: any = [];
     const packageDetails = {
         packageJson,
         packageDir,
@@ -102,7 +106,7 @@ test(`All fields are empty`, () => {
         ]
     };
     const errors = new ErrorList();
-    const specifiedComponents = [];
+    const specifiedComponents: any = [];
     const packageDetails = {
         packageJson,
         packageDir,
@@ -138,7 +142,7 @@ test(`Exception in processing`, () => {
 
 });
 
-function withoutKey(object, key) {
+function withoutKey(object: { [key:string]: any }, key: string) {
     const clone = { ...object };
     delete clone[key];
     return clone;
@@ -163,9 +167,9 @@ describe("parameterized tests", () => {
             [{ 'text': `one of the components does not have the "${key}" property` }]
         ]);
     }
-    test.each(cases)("%s", (label, packageJson, expectedErrors) => {
+    test.each(cases)("%s", (label, packageJson, expectedErrors: any) => {
         const errors = new ErrorList();
-        const specifiedComponents = [];
+        const specifiedComponents: any = [];
         const packageDetails = {
             packageJson,
             packageDir,

@@ -16,16 +16,22 @@
         "tsc:watch": "tsc -w",
         "ts-node": "ts-node",
         "build:actual": "tsc && copyfiles 'src/**/*.js' --up 1 dist",
+        "copyfiles": "copyfiles",
         "build": "npm run validate && npm run build:fast",
+        "clean": "rimraf --glob dist/ dist-*/ docs/ *.tgz",
         "validate": "run-p lint test"
     },
     "jest": {
+        "preset": "ts-jest",
         "verbose": true,
         "testEnvironment": "node",
         "coveragePathIgnorePatterns": [
             "<rootDir>/dist/",
             "<rootDir>/node_modules/",
             "<rootDir>/src/constants.js"
+        ],
+        "roots": [
+            "<rootDir>/src"
         ]
     },
     "repository": {
@@ -39,11 +45,13 @@
     },
     "homepage": "https://github.com/haheskja/scp-boilerplate#readme",
     "devDependencies": {
+        "@types/jest": "^26.0.15",
         "copyfiles": "^2.4.0",
         "cross-env": "^7.0.2",
         "eslint": "^7.6.0",
         "jest": "^26.5.3",
         "npm-run-all": "^4.1.5",
+        "ts-jest": "^26.4.1",
         "ts-node": "^9.0.0",
         "typescript": "^4.0.3"
     },
