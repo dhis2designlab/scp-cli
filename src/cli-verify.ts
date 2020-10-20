@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 
-const pathm = require("path");
+import pathm from "path";
 const __file__ = pathm.basename(__filename);
 const consola = require("consola");
 const { ESLint } = require("eslint");
-const yargs = require("yargs");
+import yargs from "yargs";
 const debugm = require("debug");
 const chalk = require("chalk");
 const debug = debugm(`scp:${__file__}`);
-const fsm = require("fs");
+import fsm from "fs";
 const fsmp = fsm.promises;
-const constants = require("./constants");
-const utilm = require("util");
-const cpm = require("child_process");
+import * as constants from "./constants";
+import utilm from "util";
+import cpm from "child_process";
 
 
 
@@ -22,32 +22,32 @@ const cpmp = {
 
 const { options } = require("yargs");
 
-const command = "verify [arg]";
-const describe = "this command will verify the package";
+export const command = "verify [arg]";
+export const describe = "this command will verify the package";
 
-function builder(yargs) {
+function builder(yargs: yargs.Argv) {
     yargs.option("package-dir", {
         alias: "d"
     })
     return yargs;
 }
 
-function pspawn(...args) {
-    let stdout = undefined;
-    let stderr = undefined;
+function pspawn(...args: string[]) {
+    let stdout: string | undefined = undefined;
+    let stderr: string | undefined = undefined;
     consola.debug(`pspawn: args = `, args);
-    const cp = cpm.spawn(...args);
-    cp.stdout && cp.stdout.on("data", (data) => { stdout = (stdout || "") + data; });
-    cp.stderr && cp.stderr.on("data", (data) => { stderr = (stderr || "") + data; });
+    const cp: any = (cpm.spawn as any)(...args);
+    cp.stdout && cp.stdout.on("data", (data: any) => { stdout = (stdout || "") + data; });
+    cp.stderr && cp.stderr.on("data", (data: any) => { stderr = (stderr || "") + data; });
     return new Promise((resolve, reject) => {
-        cp.on("close", (...args) => {
+        cp.on("close", (...args: string[]) => {
             resolve(["close", ...args])
         })
-        cp.on("error", (...args) => {
+        cp.on("error", (...args: string[]) => {
             consola.debug(`cp error, args = `, args);
             resolve(["error", ...args])
         })
-    }).then((result) => {
+    }).then((result: any) => {
         consola.debug(`result =`, result);
         const resolveType = result[0];
         if (resolveType === "close") {
@@ -60,28 +60,38 @@ function pspawn(...args) {
     })
 }
 
-class ErrorList {
+interface ErrorItem {
+    text: string;
+}
 
+class ErrorList {
+    list: ErrorItem[];
     constructor() {
         this.list = []
     }
 
-    push(text, options) {
+    push(text: string, options?: {}) {
         consola.debug(`Pushing error: ${text}`);
         this.list.push({ text });
     }
 }
 
-async function handler(argv) {
+export interface PackageDetails {
+    packageJson: any,
+    packageDir: string,
+    package_: any,
+};
+
+export async function handler(argv: yargs.Arguments) {
     consola.debug(`entry: argv =`, argv);
-    const packageDir = argv["package-dir"] || "./";
+    const packageDir: string = argv["package-dir"] as string || "./";
     const packageJsonFile = pathm.join(packageDir, "package.json");
     consola.debug(`packageJsonFile = ${packageJsonFile}`);
     const packageJsonString = await fsmp.readFile(packageJsonFile);
-    const packageJson = JSON.parse(packageJsonString);
+    const packageJson = JSON.parse(packageJsonString.toString());
     consola.debug(`packageJson =`, packageJson);
     const errors = new ErrorList();
-    const specifiedComponents = [];
+    const specifiedComponents: SpecifiedComponents = {};
 
     /* Turning linting off for now
     {
@@ -129,8 +139,15 @@ async function handler(argv) {
     }
 }
 
+export interface SpecifiedComponent {
+    name: string;
+    description: string;
+};
+export interface SpecifiedComponents {
+    [key: string]: SpecifiedComponent;
+};
 
-async function componentHandler(packageDetails, errors, specifiedComponents) {
+export async function componentHandler(packageDetails: PackageDetails, errors: ErrorList, specifiedComponents: SpecifiedComponents) {
     const { package_, packageJson, packageDir } = packageDetails;
     if (packageJson.hasOwnProperty(constants.components)) {
         const componentsList = packageJson[constants.components];
@@ -171,6 +188,8 @@ async function componentHandler(packageDetails, errors, specifiedComponents) {
     }
 }
 
+// TODO FIXME
+// module.exports = componentHandler;
+// Object.assign(module.exports, { command, describe, builder, handler, componentHandler });
 
-module.exports = componentHandler;
-Object.assign(module.exports, { command, describe, builder, handler});
+// export { command, describe, builder, handler, componentHandler };

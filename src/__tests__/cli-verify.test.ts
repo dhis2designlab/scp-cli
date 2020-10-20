@@ -1,5 +1,6 @@
 const consola = require('consola');
-const componentHandler = require('../../src/cli-verify');
+//const { componentHandler } = require('../../src/cli-verify');
+import { componentHandler } from '../../src/cli-verify';
 const packageDir = '../../src';
 const package_ = {
     helloWorld: function () {
@@ -136,8 +137,8 @@ test(`Exception in processing`, () => {
         packageDir,
         package_
     };
-    // This will throw becaause specifiedComponents is null ...
-    componentHandler(packageDetails, errors, null);
+    // This will throw because specifiedComponents is null ...
+    componentHandler(packageDetails, errors, null!);
     expect(errors.list.map(item => item.text)).toContainEqual(expect.stringContaining("problem when processing package.json "));
 
 });
