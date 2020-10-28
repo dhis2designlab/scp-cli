@@ -115,7 +115,7 @@ export async function handler(argv: yargs.Arguments) {
         errors.push(`keyword ${constants.keyword} is not specified in package.json`);
     }
 
-
+    consola.debug(`specifiedComponents = `, specifiedComponents);
 
     if (packageJson.hasOwnProperty("keywords")) {
         consola.debug(`Found keywords in package.json`);
@@ -137,56 +137,86 @@ export async function handler(argv: yargs.Arguments) {
         consola.info(chalk.green(`Verification passed`));
         process.exitCode = 0;
     }
-}
+};
 
 export interface SpecifiedComponent {
     name: string;
     description: string;
+    dhis2Version?: Array<string>;
 };
 export interface SpecifiedComponents {
     [key: string]: SpecifiedComponent;
 };
 
+function isArrayOfStrings(value: any) : boolean {
+    return Array.isArray(value) && value.every(item => typeof item === "string");
+}
+
 export async function componentHandler(packageDetails: PackageDetails, errors: ErrorList, specifiedComponents: SpecifiedComponents) {
     const { package_, packageJson, packageDir } = packageDetails;
-    if (packageJson.hasOwnProperty(constants.components)) {
-        const componentsList = packageJson[constants.components];
-        if (!(componentsList === undefined || componentsList.length == 0)) {
-            for (let i = 0; i < componentsList.length; i++) {
-                try {
-                    let componentsListItem = componentsList[i];
-                    for (const key of ["export", "name", "description"]) {
-                        if (!componentsListItem.hasOwnProperty(key)) {
-                            errors.push(`one of the components does not have the "${key}" property`);
-                            continue;
-                        }
-                        if (componentsListItem[key] === "") {
-                            errors.push(`property "${key}" is empty`);
-                            continue;
-                        }
-                        if (typeof (componentsListItem[key]) !== "string") {
-                            errors.push(`property "${key}" must be a string`);
-                            continue;
-                        }
-                    }
-                    const { export: key, name, description } = componentsListItem;
-                    if (!package_.hasOwnProperty(key)) {
-                        errors.push(`package.json ${constants.components}[${i}] specified export "${key}" is not exported from the package`);
-                        continue;
-                    }
-                    consola.debug(`Found export "${key}" specified in ${constants.components}[${i}]: `, { name, description });
-                    specifiedComponents[key] = { name, description };
-                } catch (error) {
-                    errors.push(`problem when processing package.json ${constants.components}[${i}]: ${error}`);
+    if (!packageJson.hasOwnProperty(constants.dhis2Scp)) {
+        errors.push(`package.json does not include ${constants.dhis2Scp} field`);
+        return;
+    }
+    const dhis2Scp = packageJson[constants.dhis2Scp];
+    if (!dhis2Scp.hasOwnProperty(constants.components)) {
+        errors.push(`package.json/${constants.dhis2Scp} does not include ${constants.components} field`);
+        return;
+    }
+    if (!dhis2Scp.hasOwnProperty(constants.framework)) {
+        errors.push(`package.json/${constants.dhis2Scp} does not include ${constants.framework}`);
+    } else if (typeof dhis2Scp[constants.framework] !== "string") {
+        errors.push(`package.json/${constants.dhis2Scp} includes ${constants.framework} but it is not a string`);
+    } else if (["react", "angular"].indexOf(dhis2Scp[constants.framework].toLowerCase()) < 0) {
+        errors.push(`package.json/${constants.dhis2Scp} includes ${constants.framework} but it is not "react" or "angular"`)
+    }
+    const componentsList = dhis2Scp[constants.components];
+    if (!Array.isArray(componentsList)) {
+        errors.push(`package.json/${constants.dhis2Scp} includes ${constants.components} but it is not an array`);
+        return;
+    }
+    if (componentsList.length == 0) {
+        errors.push(`package.json/${constants.dhis2Scp} includes ${constants.components} field, but the list is empty`);
+        return;
+    }
+    for (let i = 0; i < componentsList.length; i++) {
+        try {
+            let componentsListItem = componentsList[i];
+
+            if (componentsListItem.hasOwnProperty("dhis2Version") && !(isArrayOfStrings(componentsListItem["dhis2Version"]))) {
+                errors.push(`property "dhis2Version" must be an array of strings`);
+                continue;
+            }
+
+            for (const key of ["export", "name", "description"]) {
+                if (!componentsListItem.hasOwnProperty(key)) {
+                    errors.push(`one of the components does not have the "${key}" property`);
+                    continue;
+                }
+                if (componentsListItem[key] === "") {
+                    errors.push(`property "${key}" is empty`);
+                    continue;
+                }
+                if (typeof (componentsListItem[key]) !== "string") {
+                    errors.push(`property "${key}" must be a string`);
+                    continue;
                 }
             }
-        } else {
-            errors.push(`package.json includes ${constants.components} field, but the list is empty`);
+
+            const { export: key, name, description, dhis2Version } = componentsListItem;
+            if (!package_.hasOwnProperty(key)) {
+                errors.push(`package.json ${constants.components}[${i}] specified export "${key}" is not exported from the package`);
+                continue;
+            }
+
+            consola.debug(`Found export "${key}" specified in ${constants.components}[${i}]: `, { name, description, dhis2Version});
+            specifiedComponents[key] = { name, description, dhis2Version};
+        } catch (error) {
+            errors.push(`problem when processing package.json ${constants.components}[${i}]: ${error}`);
         }
-    } else {
-        errors.push(`package.json does not include ${constants.components} field`);
     }
 }
+
 
 // TODO FIXME
 // module.exports = componentHandler;
