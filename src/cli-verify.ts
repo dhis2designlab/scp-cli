@@ -3,7 +3,7 @@
 import pathm from "path";
 const __file__ = pathm.basename(__filename);
 const consola = require("consola");
-const { ESLint } = require("eslint");
+// const { ESLint } = require("eslint");
 import yargs from "yargs";
 const debugm = require("debug");
 const chalk = require("chalk");
