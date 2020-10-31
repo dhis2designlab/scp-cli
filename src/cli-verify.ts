@@ -13,7 +13,7 @@ const fsmp = fsm.promises;
 import * as constants from "./constants";
 import utilm from "util";
 import cpm from "child_process";
-
+import { pspawn } from "./misc";
 
 
 const cpmp = {
@@ -32,33 +32,6 @@ function builder(yargs: yargs.Argv) {
     return yargs;
 }
 
-function pspawn(...args: string[]) {
-    let stdout: string | undefined = undefined;
-    let stderr: string | undefined = undefined;
-    consola.debug(`pspawn: args = `, args);
-    const cp: any = (cpm.spawn as any)(...args);
-    cp.stdout && cp.stdout.on("data", (data: any) => { stdout = (stdout || "") + data; });
-    cp.stderr && cp.stderr.on("data", (data: any) => { stderr = (stderr || "") + data; });
-    return new Promise((resolve, reject) => {
-        cp.on("close", (...args: string[]) => {
-            resolve(["close", ...args])
-        })
-        cp.on("error", (...args: string[]) => {
-            consola.debug(`cp error, args = `, args);
-            resolve(["error", ...args])
-        })
-    }).then((result: any) => {
-        consola.debug(`result =`, result);
-        const resolveType = result[0];
-        if (resolveType === "close") {
-            const [_, code, signal] = result;
-            return { code, signal, stdout, stderr, error: undefined };
-        } else {
-            const [_, error] = result;
-            return { code: undefined, signal: undefined, stdout, stderr, error };
-        }
-    })
-}
 
 interface ErrorItem {
     text: string;

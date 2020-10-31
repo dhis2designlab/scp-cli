@@ -10,7 +10,8 @@ import yargs from "yargs";
 const chalk = require("chalk");
 const boxen = require("boxen");
 consola._stdout = process.stderr;
-const verifyCommand = require("./cli-verify");
+import * as verifyCommand from "./cli-verify";
+import * as prVerifyCommand from "./cli-pr-verify";
 const greeting = chalk.white.bold('DHIS2-SCP-CLI');
 const boxenOptions = {
   padding: 1,
@@ -31,6 +32,7 @@ async function main() {
     .strict()
     .middleware([middleware])
     .command(verifyCommand)
+    .command(prVerifyCommand)
     .help("h")
     .alias("help", "h")
     /*
