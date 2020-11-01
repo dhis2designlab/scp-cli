@@ -57,11 +57,13 @@ export async function pullRequestVerify(eventData: any) {
     consola.debug({ filesUrl });
     const response = await axios.get(filesUrl);
     const files = response.data;
-    consola.debug({ files });
+    fileNameVerify(files[0].filename);
+    consola.info("OK: checks passed");
+}
 
-    if (files[0].filename !== constants.whitelistFile) {
-        throw new Error(`Changed file ${files[0].filename} instead of ${constants.whitelistFile}`);
+export async function fileNameVerify(fileName: string) {
+    if (fileName !== constants.whitelistFile) {
+        throw new Error(`Changed file ${fileName} instead of ${constants.whitelistFile}`);
     }
-    consola.info(`OK: only changed ${constants.whitelistFile}`)
-    consola.log(`Checks passed`);
+    consola.debug(`OK: only changed ${constants.whitelistFile}`);
 }

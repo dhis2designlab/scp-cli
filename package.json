@@ -70,6 +70,7 @@
         "chalk": "^4.1.0",
         "consola": "^2.14.0",
         "debug": "^4.1.1",
+        "jest-fetch-mock": "^3.0.3",
         "yargs": "^15.4.1"
     }
 }
