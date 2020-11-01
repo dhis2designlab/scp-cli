@@ -50,7 +50,8 @@ test("Right output for correct run", async () => {
     const consoleSpy = jest
         .spyOn(consola, 'info')
         .mockImplementation(() => { });
-    pullRequestVerify(data);
+    await pullRequestVerify(data);
     expect(consoleSpy).toHaveBeenCalledWith("OK: event is a pull request");
     expect(consoleSpy).toHaveBeenCalledWith("OK: pull request only changes one file");
+    expect(consoleSpy).toHaveBeenCalledWith("OK: checks passed");
 });
