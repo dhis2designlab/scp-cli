@@ -1,5 +1,5 @@
 import * as jsonData from '../../data/sample-event.json';
-import { handler } from '../../src/cli-pr-verify';
+import { pullRequestVerify } from '../../src/cli-pr-verify';
 const consola = require('consola');
 import fsm from "fs";
 const fsmp = fsm.promises;
@@ -9,8 +9,9 @@ test('Missing pull_request property', async () => {
     let data = JSON.parse(JSON.stringify(jsonData));
     data["push_request"] = data["pull_request"];
     delete data["pull_request"];
-    //consola.log(data.push_request);
-    expect(1).toEqual(expected);
+    await expect(
+        pullRequestVerify(data)
+       ).rejects.toThrow(new Error('event-json does not have a pull_request property.'));
 });
 
 test('Changed two files instead of one', async () => {
@@ -19,9 +20,8 @@ test('Changed two files instead of one', async () => {
     let pullRequest = data["pull_request"];
     pullRequest.changed_files = 2;
     consola.log("Changed files in a pull request", pullRequest.changed_files);
-    expect(1).toEqual(expected);
+    await expect(
+        pullRequestVerify(data)
+       ).rejects.toThrow(new Error('More than one file has been changed.'));
 });
-
-
-
 
