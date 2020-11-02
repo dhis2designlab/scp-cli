@@ -4,7 +4,7 @@ import pathm from "path";
 const __file__ = pathm.basename(__filename);
 const consola = require("consola");
 // const { ESLint } = require("eslint");
-import yargs from "yargs";
+import yargs, { parse } from "yargs";
 const debugm = require("debug");
 const chalk = require("chalk");
 const debug = debugm(`scp:${__file__}`);
@@ -63,8 +63,9 @@ export async function pullRequestVerify(eventData: any) {
     const response = await axios.get(filesUrl);
     const files = response.data;
     fileNameVerify(files[0].filename);
-    const diff = await getDiffFile(pullRequest.diff_url);
-    consola.log("DIFF", diff);
+    let diff = await getDiffFile(pullRequest.diff_url);
+    const packages = parseChanges(diff);
+    consola.log("Added packages", packages);
     consola.info("OK: checks passed");
 }
 
@@ -85,3 +86,22 @@ export async function getDiffFile(url: any) {
         throw new Error(`Error fetching diff file: ${error}`);
     }
 };
+
+export function parseChanges(diff: string) {
+    const packages = [];
+    let results = (diff.match(/^\+[^\+]+/gm) || `No results found`);
+    for (let i = 0; i < results.length; i++) {
+        const pg = results[i].replace(/(\n|\+)/g, "");
+        const pgArr: string[] = pg.split(`,`);
+        const packageData = {
+            identifier: pgArr[0],
+            version: pgArr[1],
+        };
+        packages.push(packageData);
+    }
+    //FIXME: Change to one
+    if (packages.length !== 2) {
+        throw new Error(`Error extracting package data`);
+    }
+    return packages;
+}
