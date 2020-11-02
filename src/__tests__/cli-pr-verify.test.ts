@@ -1,5 +1,5 @@
 import * as jsonData from '../../data/sample-event.json';
-import { pullRequestVerify, fileNameVerify } from '../../src/cli-pr-verify';
+import { pullRequestVerify, fileNameVerify, getDiffFile } from '../../src/cli-pr-verify';
 const consola = require('consola');
 import fsm from "fs";
 const fsmp = fsm.promises;
@@ -54,4 +54,11 @@ test("Right output for correct run", async () => {
     expect(consoleSpy).toHaveBeenCalledWith("OK: event is a pull request");
     expect(consoleSpy).toHaveBeenCalledWith("OK: pull request only changes one file");
     expect(consoleSpy).toHaveBeenCalledWith("OK: checks passed");
+});
+
+
+test("Could not fetch diff file", async () => {
+    await expect(
+        getDiffFile("test")
+    ).rejects.toThrowError(`Error fetching diff file`);
 });

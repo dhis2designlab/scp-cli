@@ -15,6 +15,11 @@ import utilm from "util";
 import cpm from "child_process";
 import axios from "axios";
 
+export interface PackageData {
+    identifier: string,
+    version: string,
+};
+
 export const command = "pr-verify [event-json]";
 export const describe = "this command will verify a pull request";
 
@@ -58,6 +63,8 @@ export async function pullRequestVerify(eventData: any) {
     const response = await axios.get(filesUrl);
     const files = response.data;
     fileNameVerify(files[0].filename);
+    const diff = await getDiffFile(pullRequest.diff_url);
+    consola.log("DIFF", diff);
     consola.info("OK: checks passed");
 }
 
@@ -67,3 +74,14 @@ export async function fileNameVerify(fileName: string) {
     }
     consola.debug(`OK: only changed ${constants.whitelistFile}`);
 }
+
+export async function getDiffFile(url: any) {
+    const fetch = require("node-fetch");
+    try {
+        const response = await fetch(url);
+        const result = await response.text();
+        return result;
+    } catch (error) {
+        throw new Error(`Error fetching diff file: ${error}`);
+    }
+};
