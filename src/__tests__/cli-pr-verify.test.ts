@@ -1,5 +1,5 @@
 import * as jsonData from '../../data/sample-event.json';
-import { pullRequestVerify, fileNameVerify, getDiffFile } from '../../src/cli-pr-verify';
+import { pullRequestVerify, fileNameVerify, getDiffFile, parseChanges } from '../../src/cli-pr-verify';
 const consola = require('consola');
 import fsm from "fs";
 const fsmp = fsm.promises;
@@ -61,4 +61,14 @@ test("Could not fetch diff file", async () => {
     await expect(
         getDiffFile("test")
     ).rejects.toThrowError(`Error fetching diff file`);
+});
+
+test("Failure on three packages added in pull-request", async () => {
+    const diff = `
+    +scp-component-test-library,1.0.1
+    +scp-component-test-library,1.0.2
+    +lodash,4.17.20`;
+    await expect(
+        parseChanges(diff)
+    ).rejects.toThrowError(`Error extracting package data`);
 });

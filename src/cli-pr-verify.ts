@@ -87,7 +87,7 @@ export async function getDiffFile(url: any) {
     }
 };
 
-export function parseChanges(diff: string) {
+export async function parseChanges(diff: string) {
     const packages = [];
     let results = (diff.match(/^\+[^\+]+/gm) || `No results found`);
     for (let i = 0; i < results.length; i++) {
