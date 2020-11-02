@@ -1,5 +1,7 @@
 import * as jsonData from '../../data/sample-event.json';
 import { pullRequestVerify, fileNameVerify, getDiffFile, parseChanges } from '../../src/cli-pr-verify';
+import * as prVerify from '../../src/cli-pr-verify';
+
 const consola = require('consola');
 import fsm from "fs";
 const fsmp = fsm.promises;
@@ -71,4 +73,13 @@ test("Failure on three packages added in pull-request", async () => {
     await expect(
         parseChanges(diff)
     ).rejects.toThrowError(`Error extracting package data`);
+});
+
+test("Verify package identifier", async () => {
+    const consoleSpy = jest
+        .spyOn(consola, 'info')
+        .mockImplementation(() => { });
+    await prVerify.verifyPackageIdentifier({identifier: "scp-component-test-library", version: "1.0.1"});
+    expect(consoleSpy).toHaveBeenCalledWith("OK: got package.json");
+    expect(consoleSpy).toHaveBeenCalledWith("OK: got package.json");
 });
