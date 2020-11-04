@@ -156,7 +156,7 @@ export async function verifyPackageIdentifier(packageData: PackageData) {
 }
 
 export async function verifyPackageJson(packageJson: {[key:string]: any}) {
-    const { name, version } = packageJson;
+    let { name, version } = packageJson;
     const desc = JSON.stringify({name, version});
     // https://docs.npmjs.com/cli/v6/configuring-npm/package-json#repository
     if (!packageJson.hasOwnProperty("repository")) {
@@ -176,12 +176,16 @@ export async function verifyPackageJson(packageJson: {[key:string]: any}) {
     }
     let url = repository.url as string;
     url = url.replace("git+https", "https");
+    url = "https://github.com/dhis2designlab/scp-component-test-library.git";
+    //FIXME Remove hardcoded version
+    version = "v1.0.2";
     const git = simpleGit();
-    consola.debug(`Will clone ${url} into ${globals.repoDir}`);
+    consola.debug(`Will clone ${url} with version ${version} into ${globals.repoDir}`);
     //const gitOptions: {[key: string]: any} = { "--depth": 1, "--branch": `v${version}` };
     // TODO FIXME
     //delete gitOptions["--branch"];
     //await git.clone(url, globals.repoDir!, gitOptions);
     await rimrafp(globals.repoDir!);
-    await git.raw(["clone", "--depth", "1", url, globals.repoDir!])
+    await git.raw(["clone", "--depth", "1", url, globals.repoDir!]);
+    await git.raw(["--git-dir", `${globals.repoDir}\\.git`,"checkout", version]);
 }
