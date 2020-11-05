@@ -12,7 +12,6 @@ const debug = debugm(`scp:${__file__}`);
 import * as constants from "./constants";
 import process from "process";
 import fetch from "node-fetch";
-import simpleGit from "simple-git";
 import { verificationHandler } from "./cli-verify"
 import fsm from "fs";
 
@@ -190,11 +189,17 @@ export async function verifyPackageJson(packageJson: { [key: string]: unknown })
     let url = repository.url as string;
     url = url.replace("git+https", "https");
     url = "https://github.com/dhis2designlab/scp-component-test-library.git";
-    const git = simpleGit();
     consola.debug(`Will clone ${url} with version ${version} into ${globals.repoDir}`);
     await rimrafp(globals.repoDir);
-    await git.raw(["clone", "--depth", "1", url, globals.repoDir]);
-    await git.raw(["--git-dir", `${globals.repoDir}\\.git`, "checkout", `v${version}`]);
+    {
+        const args = ["git", "clone", "--depth", "1", "--branch", `v${version}`, url, globals.repoDir]
+        const results = await miscm.pspawn(args[0], args.slice(1), {stdio: "inherit", shell: true});
+        consola.debug("results", results);
+        const { code, error } = results;
+        if ( error || code !== 0 ) {
+            throw new Error(`Failed to run ${args}`);
+        }
+    }
     try {
         process.chdir(globals.repoDir);
         consola.log(`Switched to a directory: ${process.cwd()}`);
