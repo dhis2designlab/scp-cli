@@ -1,14 +1,17 @@
-import * as jsonData from '../../data/sample-event.json';
+// import * as jsonData from '../../data/sample-event.json';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const jsonData = require("../../data/sample-event.json"); 
 import { pullRequestVerify, fileNameVerify, getDiffFile, parseChanges } from '../../src/cli-pr-verify';
 import * as prVerify from '../../src/cli-pr-verify';
 
-const consola = require('consola');
-import fsm from "fs";
-const fsmp = fsm.promises;
+// const consola = require('consola');
+import consola from "consola";
 import * as constants from "../constants";
 
+jest.setTimeout(50000);
+
 test('Missing pull_request property', async () => {
-    let data = JSON.parse(JSON.stringify(jsonData));
+    const data = JSON.parse(JSON.stringify(jsonData));
     data["push_request"] = data["pull_request"];
     delete data["pull_request"];
     await expect(
@@ -17,7 +20,7 @@ test('Missing pull_request property', async () => {
 });
 
 test('Pull_request undefined', async () => {
-    let data = JSON.parse(JSON.stringify(jsonData));
+    const data = JSON.parse(JSON.stringify(jsonData));
     data["pull_request"] = {};
     await expect(
         pullRequestVerify(data)
@@ -25,8 +28,8 @@ test('Pull_request undefined', async () => {
 });
 
 test('Changed two files instead of one', async () => {
-    let data = JSON.parse(JSON.stringify(jsonData));
-    let pullRequest = data["pull_request"];
+    const data = JSON.parse(JSON.stringify(jsonData));
+    const pullRequest = data["pull_request"];
     pullRequest.changed_files = 2;
     await expect(
         pullRequestVerify(data)
@@ -42,7 +45,7 @@ test('Changing the wrong file', async () => {
 test("Changing the right file", async () => {
     const consoleSpy = jest
         .spyOn(consola, 'debug')
-        .mockImplementation(() => { });
+        .mockImplementation(() => { return; });
     fileNameVerify("list.csv");
     expect(consoleSpy).toHaveBeenCalledWith(`OK: only changed ${constants.whitelistFile}`);
 });
@@ -51,7 +54,7 @@ test("Right output for correct run", async () => {
     const data = JSON.parse(JSON.stringify(jsonData));
     const consoleSpy = jest
         .spyOn(consola, 'info')
-        .mockImplementation(() => { });
+        .mockImplementation(() => { return; });
     await pullRequestVerify(data);
     expect(consoleSpy).toHaveBeenCalledWith("OK: event is a pull request");
     expect(consoleSpy).toHaveBeenCalledWith("OK: pull request only changes one file");
@@ -78,8 +81,8 @@ test("Failure on three packages added in pull-request", async () => {
 test("Verify package identifier", async () => {
     const consoleSpy = jest
         .spyOn(consola, 'info')
-        .mockImplementation(() => { });
-    await prVerify.verifyPackageIdentifier({identifier: "scp-component-test-library", version: "1.0.1"});
+        .mockImplementation(() => { return; });
+    await prVerify.verifyPackageIdentifier({identifier: "scp-component-test-library", version: "1.0.2"});
     expect(consoleSpy).toHaveBeenCalledWith("OK: got package.json");
     expect(consoleSpy).toHaveBeenCalledWith("OK: got package.json");
 });

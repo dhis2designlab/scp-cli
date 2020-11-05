@@ -1,4 +1,4 @@
-const consola = require('consola');
+import consola from "consola";
 //const { componentHandler } = require('../../src/cli-verify');
 import { componentHandler, SpecifiedComponents } from '../../src/cli-verify';
 const packageDir = '../../src';
@@ -21,8 +21,8 @@ class ErrorList {
         this.list = []
     }
 
-    push(text: string, options?: {}) {
-        consola.debug(`Pushing error: ${text}`);
+    push(text: string, options?: Record<string, unknown>) {
+        consola.debug(`Pushing error: ${text} with options ${options}`);
         this.list.push({ text });
     }
 }
@@ -41,7 +41,7 @@ const packageJsonOk = {
     }
 };
 
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 function updateKey(object: { [key: string]: any } | any[], path: string, operation: "set" | "delete", value: any): { [key: string]: any } | any[] {
     const pathParts = path.split("/");
     if (pathParts.length > 1) {
@@ -114,7 +114,7 @@ test(`All fields are empty`, () => {
         export: "",
         name: "",
         description: "",
-    });
+    }) as Record<string, unknown>;
     const errors = new ErrorList();
     const specifiedComponents: any = [];
     const packageDetails = {
@@ -138,6 +138,7 @@ test(`Exception in processing`, () => {
         package_
     };
     // This will throw because specifiedComponents is null ...
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     componentHandler(packageDetails, errors, null!);
     expect(errors.list.map(item => item.text)).toContainEqual(expect.stringContaining("problem when processing package.json "));
 
@@ -202,7 +203,7 @@ describe("parameterized tests", () => {
         const errors = new ErrorList();
         const specifiedComponents: any = [];
         const packageDetails = {
-            packageJson,
+            packageJson: packageJson as Record<string, unknown>,
             packageDir,
             package_
         };

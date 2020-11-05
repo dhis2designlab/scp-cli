@@ -1,14 +1,16 @@
-const consola = require("consola");
+import consola from "consola";
 import cpm from "child_process";
 
-export function pspawn(...args: string[]) {
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+export function pspawn(...args: any[]): Promise<Record<string, unknown>> {
     let stdout: string | undefined = undefined;
     let stderr: string | undefined = undefined;
     consola.debug(`pspawn: args = `, args);
     const cp: any = (cpm.spawn as any)(...args);
     cp.stdout && cp.stdout.on("data", (data: any) => { stdout = (stdout || "") + data; });
     cp.stderr && cp.stderr.on("data", (data: any) => { stderr = (stderr || "") + data; });
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         cp.on("close", (...args: string[]) => {
             resolve(["close", ...args])
         })
@@ -20,10 +22,10 @@ export function pspawn(...args: string[]) {
         consola.debug(`result =`, result);
         const resolveType = result[0];
         if (resolveType === "close") {
-            const [_, code, signal] = result;
+            const [, code, signal] = result;
             return { code, signal, stdout, stderr, error: undefined };
         } else {
-            const [_, error] = result;
+            const [, error] = result;
             return { code: undefined, signal: undefined, stdout, stderr, error };
         }
     })

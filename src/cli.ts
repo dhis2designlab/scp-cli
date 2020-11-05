@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
-const pathm = require("path");
+import pathm from "path";
 const __file__ = pathm.basename(__filename);
 
-const debugm = require("debug");
+import debugm from "debug";
 const debug = debugm(`scp:${__file__}`);
-const consola = require("consola");
+import consola from "consola";
 import yargs from "yargs";
-const chalk = require("chalk");
-const boxen = require("boxen");
-consola._stdout = process.stderr;
+import chalk from "chalk";
+import boxen from "boxen"; 
+((consola as unknown) as Record<string, unknown>)._stdout = process.stderr;
 import * as verifyCommand from "./cli-verify";
 import * as prVerifyCommand from "./cli-pr-verify";
 const greeting = chalk.white.bold('DHIS2-SCP-CLI');
@@ -20,12 +20,14 @@ const boxenOptions = {
   borderColor: "magenta",
   backgroundColor: "#000"
 };
-const msgBox = boxen(greeting, boxenOptions);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const msgBox = (boxen as any)(greeting, boxenOptions); 
 
 async function main() {
   consola.info(msgBox);
-  const middleware = (args: yargs.Arguments<any>) => {
-    consola.level += args.verbose;
+  const middleware = (args: yargs.Arguments<unknown>) => {
+    consola.level += args.verbose as number;
     debug(`entry:`, { args, level: consola.level });
   };
   const parser = yargs

@@ -1,33 +1,24 @@
 #!/usr/bin/env node
 
 import pathm from "path";
-const __file__ = pathm.basename(__filename);
-const consola = require("consola");
+import consola from "consola";
 // const { ESLint } = require("eslint");
 import yargs from "yargs";
-const debugm = require("debug");
-const chalk = require("chalk");
-const debug = debugm(`scp:${__file__}`);
+import chalk from "chalk";
 import fsm from "fs";
 const fsmp = fsm.promises;
 import * as constants from "./constants";
-import utilm from "util";
-import cpm from "child_process";
-import { pspawn } from "./misc";
+// import { pspawn } from "./misc";
 
-
-const cpmp = {
-    exec: utilm.promisify(cpm.exec),
-}
-
-const { options } = require("yargs");
+/* eslint-disable no-prototype-builtins */
 
 export const command = "verify [arg]";
 export const describe = "this command will verify the package";
 
-function builder(yargs: yargs.Argv) {
+export function builder(yargs: yargs.Argv): yargs.Argv {
     yargs.option("package-dir", {
-        alias: "d"
+        alias: "d",
+        type: "string"
     })
     return yargs;
 }
@@ -43,21 +34,25 @@ class ErrorList {
         this.list = []
     }
 
-    push(text: string, options?: {}) {
-        consola.debug(`Pushing error: ${text}`);
+    push(text: string, options?: Record<string, unknown>) {
+        consola.debug(`Pushing error: ${text}${options || ""}`);
         this.list.push({ text });
     }
 }
 
 export interface PackageDetails {
-    packageJson: any,
+    packageJson: Record<string, unknown>,
     packageDir: string,
-    package_: any,
-};
+    package_: Record<string, unknown>,
+}
 
-export async function handler(argv: yargs.Arguments) {
+export async function handler(argv: yargs.Arguments): Promise<void> {
     consola.debug(`entry: argv =`, argv);
     const packageDir: string = argv["package-dir"] as string || "./";
+    await verificationHandler(packageDir);
+}
+
+export async function verificationHandler(packageDir: string): Promise<void> {
     const packageJsonFile = pathm.join(packageDir, "package.json");
     consola.debug(`packageJsonFile = ${packageJsonFile}`);
     const packageJsonString = await fsmp.readFile(packageJsonFile);
@@ -75,32 +70,44 @@ export async function handler(argv: yargs.Arguments) {
         }
     }
     */
-    const package_ = require(pathm.resolve(packageDir));
+    // const package_ = await import(pathm.resolve(`${packageDir}`));
+    let package_ = undefined;
+    try {
+        consola.log(`Will import package path ${packageDir} -> `,pathm.resolve(`${packageDir}`));
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        package_ = require(pathm.resolve(`${packageDir}`));
+    } catch ( error ) {
+        consola.warn(`Could not import ${packageDir}, probbably it is not a valid commonjs module. Will skip checks for exports.`)
+    }
+
+    consola.log("Test package=", package_);
 
     const packageDetails = {
         packageJson,
         packageDir,
         package_
     };
-    try {
-        componentHandler(packageDetails, errors, specifiedComponents);
-    } catch (error) {
-        errors.push(`keyword ${constants.keyword} is not specified in package.json`);
-    }
 
     consola.debug(`specifiedComponents = `, specifiedComponents);
 
     if (packageJson.hasOwnProperty("keywords")) {
-        consola.debug(`Found keywords in package.json`);
+        consola.log(`Found keywords in package.json`);
         const keywords = packageJson["keywords"];
         if (keywords.indexOf(constants.keyword) >= 0) {
-            consola.debug(`Found dhis2 keyword`);
+            consola.log(`Found dhis2 keyword`);
         } else {
             errors.push(`keyword ${constants.keyword} is not specified in package.json`);
         }
     } else {
         errors.push(`package.json does not have any keywords, and needs ${constants.keyword}`);
     }
+
+    try {
+        componentHandler(packageDetails, errors, specifiedComponents);
+    } catch (error) {
+        errors.push(`keyword ${constants.keyword} is not specified in package.json`);
+    }
+
     if (errors.list.length) {
         for (const error of errors.list) {
             consola.error(chalk.red(`Found error: ${error.text}`));
@@ -110,28 +117,28 @@ export async function handler(argv: yargs.Arguments) {
         consola.info(chalk.green(`Verification passed`));
         process.exitCode = 0;
     }
-};
+}
 
 export interface SpecifiedComponent {
     name: string;
     description: string;
     dhis2Version?: Array<string>;
-};
+}
 export interface SpecifiedComponents {
     [key: string]: SpecifiedComponent;
-};
+}
 
-function isArrayOfStrings(value: any) : boolean {
+function isArrayOfStrings(value: unknown): boolean {
     return Array.isArray(value) && value.every(item => typeof item === "string");
 }
 
-export async function componentHandler(packageDetails: PackageDetails, errors: ErrorList, specifiedComponents: SpecifiedComponents) {
-    const { package_, packageJson, packageDir } = packageDetails;
+export async function componentHandler(packageDetails: PackageDetails, errors: ErrorList, specifiedComponents: SpecifiedComponents): Promise<void> {
+    const { package_, packageJson } = packageDetails;
     if (!packageJson.hasOwnProperty(constants.dhis2Scp)) {
         errors.push(`package.json does not include ${constants.dhis2Scp} field`);
         return;
     }
-    const dhis2Scp = packageJson[constants.dhis2Scp];
+    const dhis2Scp = packageJson[constants.dhis2Scp] as Record<string, unknown>;
     if (!dhis2Scp.hasOwnProperty(constants.components)) {
         errors.push(`package.json/${constants.dhis2Scp} does not include ${constants.components} field`);
         return;
@@ -140,7 +147,7 @@ export async function componentHandler(packageDetails: PackageDetails, errors: E
         errors.push(`package.json/${constants.dhis2Scp} does not include ${constants.framework}`);
     } else if (typeof dhis2Scp[constants.framework] !== "string") {
         errors.push(`package.json/${constants.dhis2Scp} includes ${constants.framework} but it is not a string`);
-    } else if (["react", "angular"].indexOf(dhis2Scp[constants.framework].toLowerCase()) < 0) {
+    } else if (["react", "angular"].indexOf((dhis2Scp[constants.framework] as string).toLowerCase()) < 0) {
         errors.push(`package.json/${constants.dhis2Scp} includes ${constants.framework} but it is not "react" or "angular"`)
     }
     const componentsList = dhis2Scp[constants.components];
@@ -154,7 +161,7 @@ export async function componentHandler(packageDetails: PackageDetails, errors: E
     }
     for (let i = 0; i < componentsList.length; i++) {
         try {
-            let componentsListItem = componentsList[i];
+            const componentsListItem = componentsList[i];
 
             if (componentsListItem.hasOwnProperty("dhis2Version") && !(isArrayOfStrings(componentsListItem["dhis2Version"]))) {
                 errors.push(`property "dhis2Version" must be an array of strings`);
@@ -177,13 +184,17 @@ export async function componentHandler(packageDetails: PackageDetails, errors: E
             }
 
             const { export: key, name, description, dhis2Version } = componentsListItem;
-            if (!package_.hasOwnProperty(key)) {
-                errors.push(`package.json ${constants.components}[${i}] specified export "${key}" is not exported from the package`);
-                continue;
-            }
+            if (package_ != undefined) {
+                if (!package_.hasOwnProperty(key)) {
+                    errors.push(`package.json ${constants.components}[${i}] specified export "${key}" is not exported from the package`);
+                    continue;
+                }
 
-            consola.debug(`Found export "${key}" specified in ${constants.components}[${i}]: `, { name, description, dhis2Version});
-            specifiedComponents[key] = { name, description, dhis2Version};
+                consola.debug(`Found export "${key}" specified in ${constants.components}[${i}]: `, { name, description, dhis2Version });
+            } else {
+                consola.warn(`Assuming that the exported component ${key} exists since package was not imported`);
+            }
+            specifiedComponents[key] = { name, description, dhis2Version };
         } catch (error) {
             errors.push(`problem when processing package.json ${constants.components}[${i}]: ${error}`);
         }

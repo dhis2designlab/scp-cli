@@ -9,10 +9,11 @@
       "jsx": "preserve",
       "declaration": true,
       "sourceMap": true,
+      "rootDir": "src",
       "outDir": "dist",
       "downlevelIteration": true,
-  
       "strict": true,
+      
   
       "moduleResolution": "node",
       "esModuleInterop": true,
@@ -29,7 +30,7 @@
     ],
     "exclude": [
       "dist/**",
-      "dist-*/**"
+      "dist-*/**",
     ]
   }
   

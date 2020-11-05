@@ -12,7 +12,8 @@
         "start:tsc": "npm run build:actual && npm run start:tsc:actual --",
         "start:tsc:actual": "node dist/cli.js",
         "prepare": "npm run build:actual",
-        "lint": "eslint",
+        "lint": "eslint src",
+        "lint:fix": "eslint --fix src",
         "tsc": "tsc",
         "tsc:watch": "tsc -w",
         "ts-node": "ts-node",
@@ -43,6 +44,22 @@
             }
         }
     },
+    "eslintConfig": {
+        "root": true,
+        "parser": "@typescript-eslint/parser",
+        "plugins": [
+            "@typescript-eslint"
+        ],
+        "extends": [
+            "eslint:recommended",
+            "plugin:@typescript-eslint/recommended"
+        ],
+        "ignorePatterns": [
+            "coverage",
+            "node_modules",
+            "dist"
+        ]
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/haheskja/scp-boilerplate.git"
@@ -54,12 +71,15 @@
     },
     "homepage": "https://github.com/haheskja/scp-boilerplate#readme",
     "devDependencies": {
+        "@types/debug": "^4.1.5",
         "@types/jest": "^26.0.15",
         "@types/node-fetch": "^2.5.7",
         "@types/rimraf": "^3.0.0",
+        "@typescript-eslint/eslint-plugin": "^4.6.1",
+        "@typescript-eslint/parser": "^4.6.1",
         "copyfiles": "^2.4.0",
         "cross-env": "^7.0.2",
-        "eslint": "^7.6.0",
+        "eslint": "^7.12.1",
         "jest": "^26.5.3",
         "npm-run-all": "^4.1.5",
         "ts-jest": "^26.4.1",
