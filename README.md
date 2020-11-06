@@ -13,6 +13,17 @@ The command will do the following:
 * Verify that the package passes an `npm audit` check.
 * Verify that the package passes an `eslint` check.
 
+## Technology used
+
+This package uses the following technology:
+
+* [ESLint](https://eslint.org/)
+* [Jest](https://jestjs.io/)
+* [Node.js](https://nodejs.org/)
+* [TypeScript](https://www.typescriptlang.org/)
+* [yargs](https://yargs.js.org/)
+
+
 # Package verification guide
 
 ## 1 Verification prerequisites
