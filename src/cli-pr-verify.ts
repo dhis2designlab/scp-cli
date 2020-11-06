@@ -188,7 +188,6 @@ export async function verifyPackageJson(packageJson: { [key: string]: unknown })
     }
     let url = repository.url as string;
     url = url.replace("git+https", "https");
-    url = "https://github.com/dhis2designlab/scp-component-test-library.git";
     consola.debug(`Will clone ${url} with version ${version} into ${globals.repoDir}`);
     await rimrafp(globals.repoDir);
     {
