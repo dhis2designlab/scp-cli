@@ -113,7 +113,11 @@ that runs all the checks included in the verification.
 
 ## 3 Verification process
 
-When all the prerequisites are met, you may proceed with the verification. To submit your package for verification you would need to modify [`list.csv`](https://github.com/dhis2designlab/scp-whitelist/blob/main/list.csv) file by adding a new line containing your npm package `identifier`and its `version` separated by a comma, e.g. `lodash,4.17.14`. Since you do not have a write access to the repository, a change in this file will
+When all the prerequisites are met, you may proceed with the verification.
+
+[DHIS2 SCP Whitelist](https://github.com/dhis2designlab/scp-whitelist) repository contains a list of verified NPM packages. Pull requests to this repository will be validated with a GitHub actions workflow.
+
+ To submit your package for verification you would need to modify [`list.csv`](https://github.com/dhis2designlab/scp-whitelist/blob/main/list.csv) file by adding a new line containing your npm package `identifier`and its `version` separated by a comma, e.g. `lodash,4.17.14`. Since you do not have a write access to the repository, a change in this file will
 write it to a new branch in your fork, so you can make a pull request. Fill in a title and description and create your pull request, which in turn, will trigger the verification workflow on your package.
 
 The verification workflow:
