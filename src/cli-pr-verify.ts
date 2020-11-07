@@ -14,6 +14,8 @@ import process from "process";
 import fetch from "node-fetch";
 import { verificationHandler } from "./cli-verify"
 import fsm from "fs";
+import validate from "validate-npm-package-name"
+import semver from "semver"
 
 import * as miscm from "./misc";
 
@@ -151,7 +153,14 @@ export async function parseChanges(diff: string): Promise<PackageData[]> {
 export async function verifyPackageIdentifier(packageData: PackageData): Promise<void> {
     const { identifier, version } = packageData;
     const desc = JSON.stringify(packageData);
-    // TODO consider escaping before constructing URL
+    const validateIdentifier = validate(identifier);
+    if (!validateIdentifier.validForNewPackages) {
+        throw new Error(`Invalid package identier: ${identifier}`);
+    }
+    const validateVersion = semver.valid(version);
+    if (validateVersion === null) {
+        throw new Error(`Invalid package version: ${version}`)
+    }
     const url = `https://unpkg.com/${identifier}@${version}/package.json`;
     consola.debug({ url });
     const response = await fetch(url);
@@ -173,7 +182,7 @@ export async function verifyPackageJson(packageJson: { [key: string]: unknown })
     // https://docs.npmjs.com/cli/v6/configuring-npm/package-json#repository
     if (!packageJson.hasOwnProperty("repository")) {
         throw new Error(`No repository defined for ${desc}`);
-    }
+    }    
     consola.info(`OK: package.json contains repository property`);
     const repository = packageJson.repository as Record<string, unknown>;
     if (!repository.hasOwnProperty("type")) {

@@ -75,6 +75,8 @@
         "@types/jest": "^26.0.15",
         "@types/node-fetch": "^2.5.7",
         "@types/rimraf": "^3.0.0",
+        "@types/semver": "^7.3.4",
+        "@types/validate-npm-package-name": "^3.0.0",
         "@typescript-eslint/eslint-plugin": "^4.6.1",
         "@typescript-eslint/parser": "^4.6.1",
         "copyfiles": "^2.4.0",
@@ -94,7 +96,9 @@
         "debug": "^4.1.1",
         "jest-fetch-mock": "^3.0.3",
         "rimraf": "^3.0.2",
+        "semver": "^7.3.2",
         "simple-git": "^2.21.0",
+        "validate-npm-package-name": "^3.0.0",
         "yargs": "^15.4.1"
     }
 }
