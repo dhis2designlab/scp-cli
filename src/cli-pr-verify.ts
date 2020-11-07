@@ -143,7 +143,6 @@ export async function parseChanges(diff: string): Promise<PackageData[]> {
         };
         packages.push(packageData);
     }
-    //FIXME: Change to one
     if (packages.length !== 1) {
         throw new Error(`Error extracting package data`);
     }
@@ -153,10 +152,17 @@ export async function parseChanges(diff: string): Promise<PackageData[]> {
 export async function verifyPackageIdentifier(packageData: PackageData): Promise<void> {
     const { identifier, version } = packageData;
     const desc = JSON.stringify(packageData);
+    consola.log(`Validating package identifier..`);
     const validateIdentifier = validate(identifier);
     if (!validateIdentifier.validForNewPackages) {
+        if (validateIdentifier.errors !== undefined && validateIdentifier.errors.length !== 0) {
+            for (let i = 0; i < validateIdentifier.errors.length; i++) {
+               consola.error(`Invalid package identifier: ${validateIdentifier.errors[i]}`);
+            }
+        }
         throw new Error(`Invalid package identier: ${identifier}`);
     }
+    consola.log(`Validating package version..`);
     const validateVersion = semver.valid(version);
     if (validateVersion === null) {
         throw new Error(`Invalid package version: ${version}`)
