@@ -1,5 +1,4 @@
 import consola from "consola";
-//const { componentHandler } = require('../../src/cli-verify');
 import { componentHandler, SpecifiedComponents } from '../../src/cli-verify';
 const packageDir = '../../src';
 const package_ = {

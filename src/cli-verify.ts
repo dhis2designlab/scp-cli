@@ -8,7 +8,6 @@ import chalk from "chalk";
 import fsm from "fs";
 const fsmp = fsm.promises;
 import * as constants from "./constants";
-// import { pspawn } from "./misc";
 
 /* eslint-disable no-prototype-builtins */
 
@@ -70,17 +69,17 @@ export async function verificationHandler(packageDir: string): Promise<void> {
         }
     }
     */
-    // const package_ = await import(pathm.resolve(`${packageDir}`));
     let package_ = undefined;
     try {
-        consola.log(`Will import package path ${packageDir} -> `,pathm.resolve(`${packageDir}`));
+        consola.info(`Will import package path ${packageDir} -> `,pathm.resolve(`${packageDir}`));
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         package_ = require(pathm.resolve(`${packageDir}`));
+        consola.debug("Test package: ", package_);
     } catch ( error ) {
-        consola.warn(`Could not import ${packageDir}, probbably it is not a valid commonjs module. Will skip checks for exports.`)
+        consola.warn(`Could not import ${packageDir}, probably it is not a valid commonjs module. Will skip checks for exports.`)
     }
 
-    consola.log("Test package=", package_);
+
 
     const packageDetails = {
         packageJson,
@@ -91,10 +90,10 @@ export async function verificationHandler(packageDir: string): Promise<void> {
     consola.debug(`specifiedComponents = `, specifiedComponents);
 
     if (packageJson.hasOwnProperty("keywords")) {
-        consola.log(`Found keywords in package.json`);
+        consola.info(chalk.green(`Found keywords in package.json`));
         const keywords = packageJson["keywords"];
         if (keywords.indexOf(constants.keyword) >= 0) {
-            consola.log(`Found dhis2 keyword`);
+            consola.info(chalk.green(`Found ${constants.keyword} keyword in package.json`));
         } else {
             errors.push(`keyword ${constants.keyword} is not specified in package.json`);
         }

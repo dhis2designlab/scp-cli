@@ -1,16 +1,10 @@
 #!/usr/bin/env node
 
 import consola from "consola";
-// const { ESLint } = require("eslint");
 import yargs from "yargs";
-
-/*
-import debugm from "debug";
-const debug = debugm(`scp:${__file__}`);
-*/
-
 import * as constants from "./constants";
 import process from "process";
+import chalk from "chalk";
 import fetch from "node-fetch";
 import { verificationHandler } from "./cli-verify"
 import fsm from "fs";
@@ -91,13 +85,13 @@ export async function pullRequestVerify(eventData: Record<string, unknown>): Pro
     if (!eventData.hasOwnProperty("pull_request")) {
         throw new Error("event-json does not have a pull_request property.");
     }
-    consola.info("OK: event is a pull request");
+    consola.info(chalk.green("OK: event is a pull request"));
     const pullRequest = eventData["pull_request"] as Record<string, unknown>;
 
     if (pullRequest !== undefined && pullRequest.changed_files !== 1) {
         throw new Error("More than one file has been changed.");
     }
-    consola.info("OK: pull request only changes one file");
+    consola.info(chalk.green("OK: pull request only changes one file"));
 
     const filesUrl = `${pullRequest.url}/files`;
     consola.debug({ filesUrl });
@@ -110,15 +104,15 @@ export async function pullRequestVerify(eventData: Record<string, unknown>): Pro
     await verifyPackageIdentifier(packages[0]);
 
 
-    consola.log("Added packages", packages);
-    consola.info("OK: checks passed");
+    consola.debug("Added packages", packages);
+    consola.info(chalk.green("OK: pull request checks passed."));
 }
 
 export async function fileNameVerify(fileName: string): Promise<void> {
     if (fileName !== constants.whitelistFile) {
         throw new Error(`Changed file ${fileName} instead of ${constants.whitelistFile}`);
     }
-    consola.debug(`OK: only changed ${constants.whitelistFile}`);
+    consola.debug(chalk.green(`OK: only changed ${constants.whitelistFile}`));
 }
 
 export async function getDiffFile(url: string): Promise<string> {
@@ -178,18 +172,17 @@ export async function verifyPackageIdentifier(packageData: PackageData): Promise
     }
     const packageJson = await response.json();
     consola.debug({ packageJson });
-    consola.info(`OK: got package.json`);
+    consola.info(chalk.green(`OK: fetched package.json`));
     await verifyPackageJson(packageJson);
 }
 
 export async function verifyPackageJson(packageJson: { [key: string]: unknown }): Promise<void> {
     const { name, version } = packageJson;
     const desc = JSON.stringify({ name, version });
-    // https://docs.npmjs.com/cli/v6/configuring-npm/package-json#repository
     if (!packageJson.hasOwnProperty("repository")) {
         throw new Error(`No repository defined for ${desc}`);
     }    
-    consola.info(`OK: package.json contains repository property`);
+    consola.info(chalk.green(`OK: package.json contains repository property`));
     const repository = packageJson.repository as Record<string, unknown>;
     if (!repository.hasOwnProperty("type")) {
         throw new Error(`package.json/repository must have type`);
@@ -197,7 +190,7 @@ export async function verifyPackageJson(packageJson: { [key: string]: unknown })
     if (repository.type !== "git") {
         throw new Error(`package.json/repository must have git type, not ${repository.type}`);
     }
-    consola.info(`OK: package.json/repository/type is ${repository.type}`);
+    consola.info(chalk.green(`OK: package.json/repository/type is ${repository.type}`));
     if (!repository.hasOwnProperty("url")) {
         throw new Error(`package.json/repository must have url`);
     }
@@ -216,7 +209,7 @@ export async function verifyPackageJson(packageJson: { [key: string]: unknown })
     }
     try {
         process.chdir(globals.repoDir);
-        consola.log(`Switched to a directory: ${process.cwd()}`);
+        consola.info(chalk.green(`Switched to a directory: ${process.cwd()}`));
     } catch (err) {
         consola.error(`chdir: ${err}`);
     }
@@ -232,6 +225,6 @@ export async function verifyPackageJson(packageJson: { [key: string]: unknown })
         }
     }
     const currentDir = process.cwd();
-    consola.log(`Current directory: ${currentDir}`);
+    consola.info(`Current directory: ${currentDir}`);
     await verificationHandler(currentDir);
 }

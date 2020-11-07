@@ -3,6 +3,7 @@
 const jsonData = require("../../data/sample-event.json"); 
 import { pullRequestVerify, fileNameVerify, getDiffFile, parseChanges } from '../../src/cli-pr-verify';
 import * as prVerify from '../../src/cli-pr-verify';
+import chalk from "chalk";
 
 // const consola = require('consola');
 import consola from "consola";
@@ -47,7 +48,7 @@ test("Changing the right file", async () => {
         .spyOn(consola, 'debug')
         .mockImplementation(() => { return; });
     fileNameVerify("list.csv");
-    expect(consoleSpy).toHaveBeenCalledWith(`OK: only changed ${constants.whitelistFile}`);
+    expect(consoleSpy).toHaveBeenCalledWith(chalk.green(`OK: only changed ${constants.whitelistFile}`));
 });
 
 test("Right output for correct run", async () => {
@@ -56,9 +57,9 @@ test("Right output for correct run", async () => {
         .spyOn(consola, 'info')
         .mockImplementation(() => { return; });
     await pullRequestVerify(data);
-    expect(consoleSpy).toHaveBeenCalledWith("OK: event is a pull request");
-    expect(consoleSpy).toHaveBeenCalledWith("OK: pull request only changes one file");
-    expect(consoleSpy).toHaveBeenCalledWith("OK: checks passed");
+    expect(consoleSpy).toHaveBeenCalledWith(chalk.green("OK: event is a pull request"));
+    expect(consoleSpy).toHaveBeenCalledWith(chalk.green("OK: pull request only changes one file"));
+    expect(consoleSpy).toHaveBeenCalledWith(chalk.green("OK: fetched package.json"));
 });
 
 
@@ -83,6 +84,5 @@ test("Verify package identifier", async () => {
         .spyOn(consola, 'info')
         .mockImplementation(() => { return; });
     await prVerify.verifyPackageIdentifier({identifier: "scp-component-test-library", version: "1.0.2"});
-    expect(consoleSpy).toHaveBeenCalledWith("OK: got package.json");
-    expect(consoleSpy).toHaveBeenCalledWith("OK: got package.json");
+    expect(consoleSpy).toHaveBeenCalledWith(chalk.green("OK: event is a pull request"));
 });

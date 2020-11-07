@@ -30,7 +30,8 @@
         "coveragePathIgnorePatterns": [
             "<rootDir>/dist/",
             "<rootDir>/node_modules/",
-            "<rootDir>/src/constants.js"
+            "<rootDir>/src/constants.ts",
+            "<rootDir>/src/misc.ts"
         ],
         "roots": [
             "<rootDir>/src"
