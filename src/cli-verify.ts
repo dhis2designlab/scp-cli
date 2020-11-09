@@ -8,6 +8,7 @@ import chalk from "chalk";
 import fsm from "fs";
 const fsmp = fsm.promises;
 import * as constants from "./constants";
+import semver from "semver"
 
 /* eslint-disable no-prototype-builtins */
 
@@ -71,11 +72,11 @@ export async function verificationHandler(packageDir: string): Promise<void> {
     */
     let package_ = undefined;
     try {
-        consola.info(`Will import package path ${packageDir} -> `,pathm.resolve(`${packageDir}`));
+        consola.info(`Will import package path ${packageDir} -> `, pathm.resolve(`${packageDir}`));
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         package_ = require(pathm.resolve(`${packageDir}`));
         consola.debug("Test package: ", package_);
-    } catch ( error ) {
+    } catch (error) {
         consola.warn(`Could not import ${packageDir}, probably it is not a valid commonjs module. Will skip checks for exports.`)
     }
 
@@ -162,9 +163,15 @@ export async function componentHandler(packageDetails: PackageDetails, errors: E
         try {
             const componentsListItem = componentsList[i];
 
-            if (componentsListItem.hasOwnProperty("dhis2Version") && !(isArrayOfStrings(componentsListItem["dhis2Version"]))) {
-                errors.push(`property "dhis2Version" must be an array of strings`);
-                continue;
+            if (componentsListItem.hasOwnProperty(constants.version)) {
+                if (!isArrayOfStrings(componentsListItem[constants.version])) {
+                    errors.push(`property ${constants.version} must be an array of strings`);
+                    continue;
+                } else {
+                    const versions = componentsListItem[constants.version];
+                    consola.debug(`DHIS2 version(s) found: ${versions.toString()} on component ${componentsListItem.name}`);
+                    versionValidate(versions);
+                }
             }
 
             for (const key of ["export", "name", "description"]) {
@@ -200,9 +207,9 @@ export async function componentHandler(packageDetails: PackageDetails, errors: E
     }
 }
 
-
-// TODO FIXME
-// module.exports = componentHandler;
-// Object.assign(module.exports, { command, describe, builder, handler, componentHandler });
-
-// export { command, describe, builder, handler, componentHandler };
+export async function versionValidate(versions:string[]) :Promise<void> {
+    for (let i = 0; i< versions.length; i++) {
+        if (semver.valid(versions[i]) === null ) throw new Error(`Invalid dhis2 version: ${versions[i]}`);
+    }
+    consola.debug(`DHIS2 version(s): ${versions.toString()} validated`);
+}

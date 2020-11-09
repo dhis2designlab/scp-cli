@@ -1,5 +1,5 @@
 import consola from "consola";
-import { componentHandler, SpecifiedComponents } from '../../src/cli-verify';
+import { componentHandler, SpecifiedComponents, versionValidate } from '../../src/cli-verify';
 const packageDir = '../../src';
 const package_ = {
     helloWorld: function () {
@@ -149,17 +149,17 @@ describe("parameterized tests", () => {
     cases.push([
         `Missing ${constants.dhis2Scp}/${constants.components}`,
         updateKey(packageJsonOk, `${constants.dhis2Scp}/${constants.components}`, "delete", null),
-        [{text: `package.json/${constants.dhis2Scp} does not include ${constants.components} field`}]
+        [{ text: `package.json/${constants.dhis2Scp} does not include ${constants.components} field` }]
     ]);
     cases.push([
         `Empty array with ${constants.components}`,
         updateKey(packageJsonOk, `${constants.dhis2Scp}/${constants.components}`, "set", []),
-        [{text: `package.json/${constants.dhis2Scp} includes ${constants.components} field, but the list is empty`}]
+        [{ text: `package.json/${constants.dhis2Scp} includes ${constants.components} field, but the list is empty` }]
     ]);
     cases.push([
         `${constants.components} not an array`,
         updateKey(packageJsonOk, `${constants.dhis2Scp}/${constants.components}`, "set", undefined),
-        [{text: `package.json/${constants.dhis2Scp} includes ${constants.components} but it is not an array`}]
+        [{ text: `package.json/${constants.dhis2Scp} includes ${constants.components} but it is not an array` }]
     ]);
     for (const key of ["export", "name", "description"]) {
         cases.push([
@@ -181,7 +181,7 @@ describe("parameterized tests", () => {
     cases.push([
         `dhis2Version is not an array of strings`,
         updateKey(packageJsonOk, `${constants.dhis2Scp}/${constants.components}/0/dhis2Version`, "set", "32"),
-        [{ 'text': `property "dhis2Version" must be an array of strings` }]
+        [{ 'text': `property ${constants.version} must be an array of strings` }]
     ]);
     cases.push([
         `Missing ${constants.framework} property`,
@@ -212,3 +212,20 @@ describe("parameterized tests", () => {
         }
     });
 });
+
+test('Correctly specified dhis2 versions', async () => {
+    const data = ["1.2.3", "1.0.1", "4.3.2"];
+    const consoleSpy = jest
+        .spyOn(consola, 'debug')
+        .mockImplementation(() => { return; });
+    await versionValidate(data);
+    expect(consoleSpy).toHaveBeenCalledWith(`DHIS2 version(s): ${data.toString()} validated`);
+});
+
+test('Invalid dhis2 versions', async () => {
+    const data = ["1.2.3", "1.d.1", "4.3.2"];
+    await expect(
+        versionValidate(data)
+    ).rejects.toThrowError(`Invalid dhis2 version`);
+});
+
