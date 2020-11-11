@@ -8,12 +8,15 @@ import chalk from "chalk";
 import fsm from "fs";
 const fsmp = fsm.promises;
 import * as constants from "./constants";
+import * as miscm from "./misc";
 import semver from "semver"
 
 /* eslint-disable no-prototype-builtins */
 
 export const command = "verify [arg]";
 export const describe = "this command will verify the package";
+
+var module = true; //keep track of whether or not the package is an npm module
 
 export function builder(yargs: yargs.Argv): yargs.Argv {
     yargs.option("package-dir", {
@@ -61,22 +64,15 @@ export async function verificationHandler(packageDir: string): Promise<void> {
     const errors = new ErrorList();
     const specifiedComponents: SpecifiedComponents = {};
 
-    /* Turning linting off for now
-    {
-        const results = await pspawn("eslint", [packageDir], {stdio: "inherit", shell: true});
-        const { code, signal, stdout, stderr, error } = results;
-        if ( error || code !== 0 ) {
-            errors.push({ text: `Failure when linting package directory ${packageDir}: failed with ${error || code}`});
-        }
-    }
-    */
     let package_ = undefined;
     try {
-        consola.info(`Will import package path ${packageDir} -> `, pathm.resolve(`${packageDir}`));
+        let absPath = pathm.resolve(`${packageDir}`);
+        consola.info(`Will import package path ${packageDir} -> `, absPath);
         // eslint-disable-next-line @typescript-eslint/no-var-requires
-        package_ = require(pathm.resolve(`${packageDir}`));
+        package_ = require(absPath);
         consola.debug("Test package: ", package_);
     } catch (error) {
+        module = false;
         consola.warn(`Could not import ${packageDir}, probably it is not a valid commonjs module. Will skip checks for exports.`)
     }
 
@@ -106,6 +102,22 @@ export async function verificationHandler(packageDir: string): Promise<void> {
         componentHandler(packageDetails, errors, specifiedComponents);
     } catch (error) {
         errors.push(`keyword ${constants.keyword} is not specified in package.json`);
+    }
+
+    try {
+        packageLinter(packageDir);
+    } catch (error) {
+        errors.push(`Failure when linting package directory ${packageDir}: failed with ${error}`);
+    }
+
+    if (module) {
+        try {
+            npmAuditor();
+        } catch (error) {
+            errors.push(`Failure when auditing package directory ${packageDir}: failed with ${error}`);
+        }
+    } else {
+        consola.warn(`The package at ${packageDir} does not appear to be a valid commonjs module. Skipping npm audit`)
     }
 
     if (errors.list.length) {
@@ -139,6 +151,7 @@ export async function componentHandler(packageDetails: PackageDetails, errors: E
         return;
     }
     const dhis2Scp = packageJson[constants.dhis2Scp] as Record<string, unknown>;
+    //consola.debug(`\nDHIS2SCP: ` + JSON.stringify(dhis2Scp) +`\n`);
     if (!dhis2Scp.hasOwnProperty(constants.components)) {
         errors.push(`package.json/${constants.dhis2Scp} does not include ${constants.components} field`);
         return;
@@ -176,7 +189,7 @@ export async function componentHandler(packageDetails: PackageDetails, errors: E
 
             for (const key of ["export", "name", "description"]) {
                 if (!componentsListItem.hasOwnProperty(key)) {
-                    errors.push(`one of the components does not have the "${key}" property`);
+                    errors.push(`The component ${componentsListItem.name} does not have the "${key}" property`);
                     continue;
                 }
                 if (componentsListItem[key] === "") {
@@ -190,6 +203,7 @@ export async function componentHandler(packageDetails: PackageDetails, errors: E
             }
 
             const { export: key, name, description, dhis2Version } = componentsListItem;
+            consola.debug(`\npackage_ ` + JSON.stringify(package_) + `\n`);
             if (package_ != undefined) {
                 if (!package_.hasOwnProperty(key)) {
                     errors.push(`package.json ${constants.components}[${i}] specified export "${key}" is not exported from the package`);
@@ -212,4 +226,45 @@ export async function versionValidate(versions:string[]) :Promise<void> {
         if (semver.valid(versions[i]) === null ) throw new Error(`Invalid dhis2 version: ${versions[i]}`);
     }
     consola.debug(`DHIS2 version(s): ${versions.toString()} validated`);
+}
+
+export async function packageLinter(packageDir: string): Promise<void> {
+    const cmd = "eslint";
+    //Some potential default values, almost impossible to realize
+    /*
+        "--ignore-pattern 'node_modules/'", 
+        "--ignore-pattern 'dist/'",
+        "--parser-options=ecmaVersion:6",
+        "--env es6",
+        "--parser-options=sourceType:module",
+        "--fix-dry-run",
+    */
+    const args = [ packageDir ];
+    consola.debug(`running ${cmd} ${args}`);
+    const results = await miscm.pspawn(cmd, args, {stdio: "inherit", shell: true});
+    const { code, signal, stdout, stderr, error } = results; 
+    if (error || code === 2 ) {
+        consola.warn(`Failure when linting package directory ${packageDir}: failed with code ${error || code}.`); //Verification still passes
+    } else if (code !== 0) {
+        //assumes code 1, only one left
+        consola.warn(`Linting of package directory ${packageDir} completed successfully, but atleast 1 error was found. Exit code ${code}`);
+    } else {
+        consola.info(chalk.green(`eslint successfully completed.`));
+    }
+}
+
+export async function npmAuditor(): Promise<void> {
+    const cmd = "npm";
+    const args = ["audit", "--parseable"];
+    consola.debug(`running ${cmd} ${args}`);
+    const results = await miscm.pspawn(cmd, args, {stdio: "inherit", shell: true});
+    const { code, signal, stdout, stderr, error } = results; 
+    if (error) {
+        consola.warn(`Failure when auditing package. Failed with ${error}`); //Verification still passes 
+    } else if (code !== 0) {
+        //Could run fix here?
+        consola.warn(`Some vulnerabilites were found during the auditing of your package. Consider 'npm audit fix'. Exit code ${code}.`);
+    } else {
+        consola.info(chalk.green(`npm audit successfully completed.`));
+    }
 }
