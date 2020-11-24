@@ -31,20 +31,17 @@ interface ErrorItem {
     text: string;
 }
 
-class NotificationList {
+class ErrorList {
     list: ErrorItem[];
-    message: string;
-    constructor(message: string) {
-        this.list = [];
-        this.message = message;
+    constructor() {
+        this.list = []
     }
 
     push(text: string, options?: Record<string, unknown>) {
-        consola.debug(`${this.message} ${text}${options || ""}`);
+        consola.debug(`Pushing error: ${text} with options ${options}`);
         this.list.push({ text });
     }
 }
-
 
 export interface PackageDetails {
     packageJson: Record<string, unknown>,
@@ -64,9 +61,9 @@ export async function verificationHandler(packageDir: string): Promise<void> {
     const packageJsonString = await fsmp.readFile(packageJsonFile);
     const packageJson = JSON.parse(packageJsonString.toString());
     consola.debug(`packageJson =`, packageJson);
-    const errors = new NotificationList(`Pushing error:`);
-    const warnings = new NotificationList(`Warning:`);
-    const successes =  new NotificationList(``);
+    const errors = new ErrorList();
+    const warnings = new ErrorList();
+    const successes =  new ErrorList();
     const specifiedComponents: SpecifiedComponents = {};
 
     let package_ = undefined;
@@ -103,24 +100,21 @@ export async function verificationHandler(packageDir: string): Promise<void> {
         errors.push(`package.json does not have any keywords, and needs ${constants.keyword}`);
     }
 
-
-    /*
-
     try {
-        componentHandler(packageDetails, errors, specifiedComponents);
+        await componentHandler(packageDetails, errors, specifiedComponents);
     } catch (error) {
         errors.push(`keyword ${constants.keyword} is not specified in package.json`);
     }
 
     try {
-        packageLinter(packageDir, warnings, successes);
+        await packageLinter(packageDir);
     } catch (error) {
         errors.push(`Failure when linting package directory ${packageDir}: failed with ${error}`);
     }
 
     if (module) {
         try {
-            npmAuditor(warnings, successes);
+            await npmAuditor();
         } catch (error) {
             errors.push(`Failure when auditing package directory ${packageDir}: failed with ${error}`);
         }
@@ -128,8 +122,18 @@ export async function verificationHandler(packageDir: string): Promise<void> {
         consola.warn(`The package at ${packageDir} does not appear to be a valid commonjs module. Skipping npm audit`)
     }
 
-    */
+    if (errors.list.length) {
+        for (const error of errors.list) {
+            consola.error(chalk.red(`Found error: ${error.text}`));
+        }
+        process.exitCode = 1;
+    } else {
+        consola.info(chalk.green(`Verification passed`));
+        process.exitCode = 0;
+    }
+    
    // Executes all promises in parallell and waits upon completion of all to write results.
+   /*
    const promises = [
        componentHandler(packageDetails, errors, specifiedComponents),
        packageLinter(packageDir, warnings, successes),
@@ -161,6 +165,8 @@ export async function verificationHandler(packageDir: string): Promise<void> {
     }).catch((err) => {
         consola.error(chalk.red(err.message)); //all should resolve atm.
     })
+
+    */
 }
 
 export interface SpecifiedComponent {
@@ -176,7 +182,7 @@ function isArrayOfStrings(value: unknown): boolean {
     return Array.isArray(value) && value.every(item => typeof item === "string");
 }
 
-export async function componentHandler(packageDetails: PackageDetails, errors: NotificationList, specifiedComponents: SpecifiedComponents): Promise<void> {
+export async function componentHandler(packageDetails: PackageDetails, errors: ErrorList, specifiedComponents: SpecifiedComponents): Promise<void> {
     const { package_, packageJson } = packageDetails;
     if (!packageJson.hasOwnProperty(constants.dhis2Scp)) {
         errors.push(`package.json does not include ${constants.dhis2Scp} field`);
@@ -260,8 +266,7 @@ export async function versionValidate(versions:string[]) :Promise<void> {
     consola.debug(`DHIS2 version(s): ${versions.toString()} validated`);
 }
 
-export async function packageLinter(packageDir: string, warnings: NotificationList, successes: NotificationList): Promise<void> {
-    const cmd = "eslint";
+export async function packageLinter(packageDir: string): Promise<void> {
     //Some potential default values, almost impossible to realize
     /*
         "--ignore-pattern 'node_modules/'", 
@@ -271,38 +276,32 @@ export async function packageLinter(packageDir: string, warnings: NotificationLi
         "--parser-options=sourceType:module",
         "--fix-dry-run",
     */
+    const cmd = "eslint";
     const args = [ packageDir ];
     consola.debug(`running ${cmd} ${args}`);
     const results = await miscm.pspawn(cmd, args, {stdio: "inherit", shell: true});
     const { code, signal, stdout, stderr, error } = results; 
     if (error || code === 2 ) {
-        warnings.push(`Failure when linting package directory ${packageDir}: failed with code ${error || code}.`); //Verification still passes
+        consola.warn(`Failure when linting package directory ${packageDir}: failed with code ${error || code}.`); //Verification still passes
     } else if (code !== 0) {
         //assumes code 1, only one left
-        warnings.push(`Linting of package directory ${packageDir} completed successfully, but atleast 1 error was found. Exit code ${code}`);
+        consola.warn(`Linting of package directory ${packageDir} completed successfully, but atleast 1 error was found. Exit code ${code}`);
     } else {
-        //consola.info(chalk.green(`eslint successfully completed.`));
-        successes.push(`eslint successfully completed.`);
+        consola.info(chalk.green(`eslint successfully completed.`));
     }
 }
 
-export async function npmAuditor(warnings: NotificationList, successes: NotificationList, module: boolean): Promise<void> {
-    if (!module) {
-        warnings.push(`The package does not appear to be a valid commonjs module. Skipping npm audit`);
-        return;
-    }
+export async function npmAuditor(): Promise<void> {
     const cmd = "npm";
     const args = ["audit", "--parseable"];
     consola.debug(`running ${cmd} ${args}`);
     const results = await miscm.pspawn(cmd, args, {stdio: "inherit", shell: true});
     const { code, signal, stdout, stderr, error } = results; 
     if (error) {
-        warnings.push(`Failure when auditing package. Failed with ${error}`);
+        consola.warn(`Failure when auditing package. Failed with ${error}`)
     } else if (code !== 0) {
-        //Could run fix here?
-        warnings.push(`Some vulnerabilites were found during the auditing of your package. Consider 'npm audit fix'. Exit code ${code}.`); //Verification still passes
+        consola.warn(`Some vulnerabilites were found during the auditing of your package. Consider 'npm audit fix'. Exit code ${code}.`);
     } else {
-        //consola.info(chalk.green(`npm audit successfully completed.`));
-        successes.push(`npm audit successfully completed.`);
+        consola.info(chalk.green(`npm audit successfully completed.`));
     }
 }

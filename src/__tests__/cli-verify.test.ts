@@ -15,7 +15,6 @@ interface ErrorItem {
 }
 
 
-/*
 class ErrorList {
     list: ErrorItem[];
     constructor() {
@@ -27,22 +26,6 @@ class ErrorList {
         this.list.push({ text });
     }
 }
-*/
-
-class NotificationList {
-    list: ErrorItem[];
-    message: string;
-    constructor(message: string) {
-        this.list = [];
-        this.message = message;
-    }
-
-    push(text: string, options?: Record<string, unknown>) {
-        consola.debug(`${this.message} ${text}${options || ""}`);
-        this.list.push({ text });
-    }
-}
-
 
 const packageJsonOk = {
     [constants.dhis2Scp]: {
@@ -97,7 +80,7 @@ test('Correct Package.json structure', () => {
         "name": "Hello World",
         "description": "Greeting component"
     };
-    const errors = new NotificationList(`Pushing error:`);
+    const errors = new ErrorList();
     const specifiedComponents: SpecifiedComponents = {};
     const packageDetails = {
         packageJson: packageJsonOk,
@@ -112,9 +95,9 @@ test('Correct Package.json structure', () => {
 test(`Missing keyword ${constants.dhis2Scp}`, () => {
     const packageJson = {
     };
-    const expected = new NotificationList(`Pushing error:`);
+    const expected = new ErrorList();
     expected.push(`package.json does not include ${constants.dhis2Scp} field`);
-    const errors = new NotificationList(`Pushing error:`);
+    const errors = new ErrorList();
     const specifiedComponents: any = [];
     const packageDetails = {
         packageJson,
@@ -131,7 +114,7 @@ test(`All fields are empty`, () => {
         name: "",
         description: "",
     }) as Record<string, unknown>;
-    const errors = new NotificationList(`Pushing error:`);
+    const errors = new ErrorList();
     const specifiedComponents: any = [];
     const packageDetails = {
         packageJson,
@@ -147,7 +130,7 @@ test(`All fields are empty`, () => {
 
 test(`Exception in processing`, () => {
     const packageJson = packageJsonOk;
-    const errors = new NotificationList(`Pushing error:`);
+    const errors = new ErrorList();
     const packageDetails = {
         packageJson,
         packageDir,
@@ -216,7 +199,7 @@ describe("parameterized tests", () => {
         [{ 'text': `package.json/${constants.dhis2Scp} includes ${constants.framework} but it is not "react" or "angular"` }]
     ]);
     test.each(cases)("%s", (label, packageJson, expectedErrors: any) => {
-        const errors = new NotificationList(`Pushing error:`);
+        const errors = new ErrorList();
         const specifiedComponents: any = [];
         const packageDetails = {
             packageJson: packageJson as Record<string, unknown>,
