@@ -1,5 +1,8 @@
 import consola from "consola";
-import { componentHandler, SpecifiedComponents, versionValidate } from '../../src/cli-verify';
+const mkdirp = require('mkdirp');
+const rimraf = require('rimraf');
+import fs from 'fs';
+import { componentHandler, SpecifiedComponents, versionValidate, packageLinter } from '../../src/cli-verify';
 const packageDir = '../../src';
 const package_ = {
     helloWorld: function () {
@@ -229,3 +232,44 @@ test('Invalid dhis2 versions', async () => {
     ).rejects.toThrowError(`Invalid dhis2 version`);
 });
 
+//Creates testdir to eslint. Creates an empty js file atm
+test('eslint completes successfully ', async () => {
+    consola.log(`Current working directory: ` +  process.cwd())
+    var testDir = "testLintSuccess";
+    const dir = mkdirp.sync(testDir);
+    try{
+        fs.writeFileSync(`${testDir}/testfile.js`, '')
+    }catch (e){
+        consola.warn("Cannot write file ", e)
+    }
+    const consoleSpy = jest
+        .spyOn(consola, 'info')
+        .mockImplementation(() => {return;})
+    await packageLinter(`${testDir}/**`); 
+    //expect(consoleSpy).toHaveBeenCalledWith(`eslint successfully completed.`)
+    rimraf(`${testDir}`, function(err: any) {
+        if (err) consola.log(err);
+        consola.log("Successfully deleted test directory")
+    })
+});
+
+//Creates testdir to eslint. Creates a faulty js file atm
+test('eslint completes with warnings ', async () => {
+    consola.log(`Current working directory: ` +  process.cwd())
+    var testDir = "testLintWarning";
+    const dir = mkdirp.sync(testDir);
+    try{
+        fs.writeFileSync(`${testDir}/testfile.js`, 'Content that throws error')
+    }catch (e){
+        consola.warn("Cannot write file ", e)
+    }
+    const consoleSpy = jest
+        .spyOn(consola, 'warn')
+        .mockImplementation(() => {return;})
+    await packageLinter(`${testDir}/**`); 
+    expect(consoleSpy).toHaveBeenCalledWith(`Linting of package directory ${testDir}/** completed successfully, but atleast 1 error was found. Exit code 1`);
+    rimraf(`${testDir}`, function(err: any) {
+        if (err) consola.log(err);
+        consola.log("Successfully deleted test directory")
+    })
+});
