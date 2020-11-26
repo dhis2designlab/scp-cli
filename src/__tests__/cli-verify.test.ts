@@ -1,6 +1,6 @@
 import consola from "consola";
-const mkdirp = require('mkdirp');
-const rimraf = require('rimraf');
+import mkdirp from "mkdirp";
+import rimraf from "rimraf";
 import fs from 'fs';
 import { componentHandler, SpecifiedComponents, versionValidate, packageLinter } from '../../src/cli-verify';
 const packageDir = '../../src';
@@ -234,20 +234,20 @@ test('Invalid dhis2 versions', async () => {
 
 //Creates testdir to eslint. Creates an empty js file atm
 test('eslint completes successfully ', async () => {
-    consola.log(`Current working directory: ` +  process.cwd())
-    var testDir = "testLintSuccess";
+    consola.log(`Current working directory: ` + process.cwd())
+    const testDir = "testLintSuccess";
     const dir = mkdirp.sync(testDir);
-    try{
+    try {
         fs.writeFileSync(`${testDir}/testfile.js`, '')
-    }catch (e){
+    } catch (e) {
         consola.warn("Cannot write file ", e)
     }
     const consoleSpy = jest
         .spyOn(consola, 'info')
-        .mockImplementation(() => {return;})
-    await packageLinter(`${testDir}/**`); 
+        .mockImplementation(() => { return; })
+    await packageLinter(`${testDir}/**`, true);
     //expect(consoleSpy).toHaveBeenCalledWith(`eslint successfully completed.`)
-    rimraf(`${testDir}`, function(err: any) {
+    rimraf(`${testDir}`, function (err: any) {
         if (err) consola.log(err);
         consola.log("Successfully deleted test directory")
     })
@@ -255,20 +255,20 @@ test('eslint completes successfully ', async () => {
 
 //Creates testdir to eslint. Creates a faulty js file atm
 test('eslint completes with warnings ', async () => {
-    consola.log(`Current working directory: ` +  process.cwd())
-    var testDir = "testLintWarning";
+    consola.log(`Current working directory: ` + process.cwd())
+    const testDir = "testLintWarning";
     const dir = mkdirp.sync(testDir);
-    try{
+    try {
         fs.writeFileSync(`${testDir}/testfile.js`, 'Content that throws error')
-    }catch (e){
+    } catch (e) {
         consola.warn("Cannot write file ", e)
     }
     const consoleSpy = jest
         .spyOn(consola, 'warn')
-        .mockImplementation(() => {return;})
-    await packageLinter(`${testDir}/**`); 
+        .mockImplementation(() => { return; })
+    await packageLinter(`${testDir}/**`, true);
     expect(consoleSpy).toHaveBeenCalledWith(`Linting of package directory ${testDir}/** completed successfully, but atleast 1 error was found. Exit code 1`);
-    rimraf(`${testDir}`, function(err: any) {
+    rimraf(`${testDir}`, function (err: any) {
         if (err) consola.log(err);
         consola.log("Successfully deleted test directory")
     })

@@ -16,7 +16,7 @@ import semver from "semver"
 export const command = "verify [arg]";
 export const describe = "this command will verify the package";
 
-var module: boolean = true; //keep track of whether or not the package is an npm module
+let isModule = true; //keep track of whether or not the package is an npm module
 
 export function builder(yargs: yargs.Argv): yargs.Argv {
     yargs.option("package-dir", {
@@ -62,19 +62,17 @@ export async function verificationHandler(packageDir: string): Promise<void> {
     const packageJson = JSON.parse(packageJsonString.toString());
     consola.debug(`packageJson =`, packageJson);
     const errors = new ErrorList();
-    const warnings = new ErrorList();
-    const successes =  new ErrorList();
     const specifiedComponents: SpecifiedComponents = {};
 
     let package_ = undefined;
     try {
-        let absPath = pathm.resolve(`${packageDir}`);
+        const absPath = pathm.resolve(`${packageDir}`);
         consola.info(`Will import package path ${packageDir} -> `, absPath);
         // eslint-disable-next-line @typescript-eslint/no-var-requires
         package_ = require(absPath);
         consola.debug("Test package: ", package_);
     } catch (error) {
-        module = false;
+        isModule = false;
         consola.warn(`Could not import ${packageDir}, probably it is not a valid commonjs module. Will skip checks for exports.`)
     }
 
@@ -107,12 +105,12 @@ export async function verificationHandler(packageDir: string): Promise<void> {
     }
 
     try {
-        await packageLinter(packageDir);
+        await packageLinter(packageDir, false);
     } catch (error) {
         errors.push(`Failure when linting package directory ${packageDir}: failed with ${error}`);
     }
 
-    if (module) {
+    if (isModule) {
         try {
             await npmAuditor();
         } catch (error) {
@@ -131,42 +129,42 @@ export async function verificationHandler(packageDir: string): Promise<void> {
         consola.info(chalk.green(`Verification passed`));
         process.exitCode = 0;
     }
-    
-   // Executes all promises in parallell and waits upon completion of all to write results.
-   /*
-   const promises = [
-       componentHandler(packageDetails, errors, specifiedComponents),
-       packageLinter(packageDir, warnings, successes),
-       npmAuditor(warnings, successes, module)
-    ]
 
-    Promise.all(promises).then(() => {
-        if (successes.list.length) {
-            for (const success of successes.list) {
-                consola.info(chalk.green(`${success.text}`));
-            }
-        }
-    
-        if (warnings.list.length) {
-            for (const warning of warnings.list) {
-                consola.info(chalk.yellow(`${warning.text}`));
-            }
-        }
-    
-        if (errors.list.length) {
-            for (const error of errors.list) {
-                consola.error(chalk.red(`Found error: ${error.text}`));
-            }
-            process.exitCode = 1;
-        } else {
-            consola.info(chalk.green(`Verification passed`));
-            process.exitCode = 0;
-        }
-    }).catch((err) => {
-        consola.error(chalk.red(err.message)); //all should resolve atm.
-    })
-
-    */
+    // Executes all promises in parallell and waits upon completion of all to write results.
+    /*
+    const promises = [
+        componentHandler(packageDetails, errors, specifiedComponents),
+        packageLinter(packageDir, warnings, successes),
+        npmAuditor(warnings, successes, module)
+     ]
+ 
+     Promise.all(promises).then(() => {
+         if (successes.list.length) {
+             for (const success of successes.list) {
+                 consola.info(chalk.green(`${success.text}`));
+             }
+         }
+     
+         if (warnings.list.length) {
+             for (const warning of warnings.list) {
+                 consola.info(chalk.yellow(`${warning.text}`));
+             }
+         }
+     
+         if (errors.list.length) {
+             for (const error of errors.list) {
+                 consola.error(chalk.red(`Found error: ${error.text}`));
+             }
+             process.exitCode = 1;
+         } else {
+             consola.info(chalk.green(`Verification passed`));
+             process.exitCode = 0;
+         }
+     }).catch((err) => {
+         consola.error(chalk.red(err.message)); //all should resolve atm.
+     })
+ 
+     */
 }
 
 export interface SpecifiedComponent {
@@ -259,14 +257,14 @@ export async function componentHandler(packageDetails: PackageDetails, errors: E
     }
 }
 
-export async function versionValidate(versions:string[]) :Promise<void> {
-    for (let i = 0; i< versions.length; i++) {
-        if (semver.valid(versions[i]) === null ) throw new Error(`Invalid dhis2 version: ${versions[i]}`);
+export async function versionValidate(versions: string[]): Promise<void> {
+    for (let i = 0; i < versions.length; i++) {
+        if (semver.valid(versions[i]) === null) throw new Error(`Invalid dhis2 version: ${versions[i]}`);
     }
     consola.debug(`DHIS2 version(s): ${versions.toString()} validated`);
 }
 
-export async function packageLinter(packageDir: string): Promise<void> {
+export async function packageLinter(packageDir: string, test: boolean): Promise<void> {
     //Some potential default values, almost impossible to realize
     /*
         "--ignore-pattern 'node_modules/'", 
@@ -276,12 +274,16 @@ export async function packageLinter(packageDir: string): Promise<void> {
         "--parser-options=sourceType:module",
         "--fix-dry-run",
     */
+    let stdioValue = "inherit";
+    if (test) {
+        stdioValue = "ignore";
+    }
     const cmd = "eslint";
-    const args = [ packageDir ];
+    const args = [packageDir];
     consola.debug(`running ${cmd} ${args}`);
-    const results = await miscm.pspawn(cmd, args, {stdio: "inherit", shell: true});
-    const { code, signal, stdout, stderr, error } = results; 
-    if (error || code === 2 ) {
+    const results = await miscm.pspawn(cmd, args, { stdio: stdioValue, shell: true });
+    const { code, signal, stdout, stderr, error } = results;
+    if (error || code === 2) {
         consola.warn(`Failure when linting package directory ${packageDir}: failed with code ${error || code}.`); //Verification still passes
     } else if (code !== 0) {
         //assumes code 1, only one left
@@ -295,8 +297,8 @@ export async function npmAuditor(): Promise<void> {
     const cmd = "npm";
     const args = ["audit", "--parseable"];
     consola.debug(`running ${cmd} ${args}`);
-    const results = await miscm.pspawn(cmd, args, {stdio: "inherit", shell: true});
-    const { code, signal, stdout, stderr, error } = results; 
+    const results = await miscm.pspawn(cmd, args, { stdio: "inherit", shell: true });
+    const { code, signal, stdout, stderr, error } = results;
     if (error) {
         consola.warn(`Failure when auditing package. Failed with ${error}`)
     } else if (code !== 0) {
