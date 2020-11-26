@@ -102,10 +102,6 @@ export async function pullRequestVerify(eventData: Record<string, unknown>): Pro
     const packages = await parseChanges(diff);
 
     await verifyPackageIdentifier(packages[0]);
-
-
-    consola.debug("Added packages", packages);
-    consola.info(chalk.green("OK: pull request checks passed."));
 }
 
 export async function fileNameVerify(fileName: string): Promise<void> {
@@ -194,6 +190,9 @@ export async function verifyPackageJson(packageJson: { [key: string]: unknown })
     if (!repository.hasOwnProperty("url")) {
         throw new Error(`package.json/repository must have url`);
     }
+
+    consola.info(chalk.green("OK: pull request checks passed."));
+    
     let url = repository.url as string;
     url = url.replace("git+https", "https");
     consola.debug(`Will clone ${url} with version ${version} into ${globals.repoDir}`);
