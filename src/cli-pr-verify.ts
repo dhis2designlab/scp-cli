@@ -10,6 +10,7 @@ import { verificationHandler } from "./cli-verify"
 import fsm from "fs";
 import validate from "validate-npm-package-name"
 import semver from "semver"
+import * as diff from "diff";
 
 import * as miscm from "./misc";
 
@@ -40,6 +41,10 @@ export function builder(yargs: yargs.Argv): yargs.Argv {
             type: "string",
             default: null,
         })
+        .option("pull-request-url", {
+            type: "string",
+            default: null,
+        })
         .option("repo-dir", {
             alias: "d",
             type: "string"
@@ -65,6 +70,10 @@ export async function handler(argv: yargs.Arguments): Promise<void> {
         if (argv.fakePackageData != null) {
             const [ identifier, version ] = (argv.fakePackageData as string).split(",");
             await verifyPackageIdentifier({identifier, version});
+        } else if (argv.pullRequestUrl) {
+            const response = await fetch(argv.pullRequestUrl as string);
+            const pullRequest = await response.json();
+            await pullRequestVerify({"pull_request": pullRequest});
         } else {
             const eventString = await fsm.promises.readFile(argv.eventJson as string);
             const eventData = JSON.parse(eventString.toString());
@@ -79,7 +88,7 @@ export async function handler(argv: yargs.Arguments): Promise<void> {
 
 /* eslint-disable no-prototype-builtins */
 
-export async function pullRequestVerify(eventData: Record<string, unknown>): Promise<void> {
+export async function pullRequestVerify(eventData: Record<string, unknown>, repoDir: (string | null) = null): Promise<void> {
     consola.debug(`The event payload: ${eventData}`);
 
     if (!eventData.hasOwnProperty("pull_request")) {
@@ -98,10 +107,13 @@ export async function pullRequestVerify(eventData: Record<string, unknown>): Pro
     const response = await fetch(filesUrl);
     const files = await response.json();
     fileNameVerify(files[0].filename);
-    const diff = await getDiffFile(pullRequest.diff_url as string);
-    const packages = await parseChanges(diff);
 
-    await verifyPackageIdentifier(packages[0]);
+    // const diff = await getDiffFile(pullRequest.diff_url as string);
+    // const packages = await parseChanges(diff);
+    const { oldFile, newFile } = await getChangedFileData(pullRequest, files);
+    const packages = await extractPackages(oldFile, newFile);
+
+    await verifyPackageIdentifier(packages[0], repoDir);
 }
 
 export async function fileNameVerify(fileName: string): Promise<void> {
@@ -111,35 +123,70 @@ export async function fileNameVerify(fileName: string): Promise<void> {
     consola.debug(chalk.green(`OK: only changed ${constants.whitelistFile}`));
 }
 
-export async function getDiffFile(url: string): Promise<string> {
-    try {
-        const response = await fetch(url);
-        const result = await response.text();
-        return result;
+export async function getChangedFileData(pullRequest: Record<string, any>, files: Record<string, string>[]): Promise<{newFile: string, oldFile: string}> {
+    try { 
+        const oldRevision = pullRequest.base.sha;
+        const oldFileUrl = `${pullRequest.base.repo.html_url}/raw/${oldRevision}/list.csv`;
+        const newFileUrl = files[0].raw_url;
+        let oldFile;
+        {
+            const response = await fetch(oldFileUrl);
+            oldFile = await response.text();
+        }
+        /*
+        if ( oldFile.slice(-1) !== "\n" ) {
+            oldFile += "\n";
+        }
+        */
+        let newFile;
+        {
+            const response = await fetch(newFileUrl);
+            newFile = await response.text();
+        }
+        /*
+        if ( newFile.slice(-1) !== "\n" ) {
+            newFile += "\n";
+        }
+        */
+        return { newFile, oldFile };
     } catch (error) {
-        throw new Error(`Error fetching diff file: ${error}`);
+        throw new Error(`Error extracting package data: ${error}`);
     }
 }
 
-export async function parseChanges(diff: string): Promise<PackageData[]> {
+export async function extractPackages(oldFile: string, newFile: string): Promise<PackageData[]> {
     const packages = [];
-    const results = (diff.match(/^\+[^+]+/gm) || `No results found`);
-    for (let i = 0; i < results.length; i++) {
-        const pg = results[i].replace(/(\n|\+)/g, "");
-        const pgArr: string[] = pg.split(`,`);
-        const packageData = {
-            identifier: pgArr[0],
-            version: pgArr[1],
-        };
-        packages.push(packageData);
+    const oldLines = oldFile.split(/\r?\n/);
+    const newLines = newFile.split(/\r?\n/);
+    for ( const fLines of [ oldLines, newLines ] ) {
+        if ( fLines.slice(-1)[0] === "" ) {
+            fLines.pop();
+        }
     }
-    if (packages.length !== 1) {
-        throw new Error(`Error extracting package data`);
+    const changes = diff.diffArrays(oldLines, newLines);
+    consola.log(`changes =`, changes);
+    for (const change of changes) {
+        if ( change.removed ) {
+            throw new Error(`Change is removing a line`);
+        } else if ( change.added ) {
+            for ( const value of change.value ) {
+                const pgArr: string[] = value.split(`,`);
+                const packageData = {
+                    identifier: pgArr[0],
+                    version: pgArr[1],
+                };
+                packages.push(packageData);
+            }
+        }
+    }
+    consola.log(`packages =`, packages);
+    if (packages.length != 1) {
+        throw new Error(`Must change exactly 1 line in the file`);
     }
     return packages;
 }
 
-export async function verifyPackageIdentifier(packageData: PackageData): Promise<void> {
+export async function verifyPackageIdentifier(packageData: PackageData, repoDir: (string | null) = null): Promise<void> {
     const { identifier, version } = packageData;
     const desc = JSON.stringify(packageData);
     consola.log(`Validating package identifier..`);
@@ -169,10 +216,10 @@ export async function verifyPackageIdentifier(packageData: PackageData): Promise
     const packageJson = await response.json();
     consola.debug({ packageJson });
     consola.info(chalk.green(`OK: fetched package.json`));
-    await verifyPackageJson(packageJson);
+    await verifyPackageJson(packageJson, repoDir);
 }
 
-export async function verifyPackageJson(packageJson: { [key: string]: unknown }): Promise<void> {
+export async function verifyPackageJson(packageJson: { [key: string]: unknown }, repoDir: (string | null) = null): Promise<void> {
     const { name, version } = packageJson;
     const desc = JSON.stringify({ name, version });
     if (!packageJson.hasOwnProperty("repository")) {
@@ -194,36 +241,42 @@ export async function verifyPackageJson(packageJson: { [key: string]: unknown })
     consola.info(chalk.green("OK: pull request checks passed."));
     
     let url = repository.url as string;
-    url = url.replace("git+https", "https");
+    url = url.replace("git+https", "git");
     consola.debug(`Will clone ${url} with version ${version} into ${globals.repoDir}`);
-    await rimrafp(globals.repoDir);
-    {
-        const args = ["git", "clone", "--depth", "1", "--branch", `v${version}`, url, globals.repoDir]
-        const results = await miscm.pspawn(args[0], args.slice(1), {stdio: "inherit", shell: true});
-        consola.debug("results", results);
-        const { code, error } = results;
-        if ( error || code !== 0 ) {
-            throw new Error(`Failed to run ${args}`);
-        }
-    }
+    const useRepoDir = repoDir || globals.repoDir;
     try {
-        process.chdir(globals.repoDir);
-        consola.info(chalk.green(`Switched to a directory: ${process.cwd()}`));
-    } catch (err) {
-        consola.error(`chdir: ${err}`);
-    }
-    {
-        const cmd = "npm";
-        const args = ["install"];
-        consola.debug("calling ...", {cmd, args});
-        const results = await miscm.pspawn(cmd, args, {stdio: "inherit", shell: true});
-        consola.debug("results", results);
-        const { code, error } = results;
-        if ( error || code !== 0 ) {
-            throw new Error(`Failed to run ${cmd} ${args}`);
+        await rimrafp(useRepoDir);
+        {
+            const args = ["git", "clone", "--depth", "1", "--branch", `v${version}`, url, useRepoDir]
+            const results = await miscm.pspawn(args[0], args.slice(1), {stdio: "inherit", shell: true});
+            consola.debug("results", results);
+            const { code, error } = results;
+            if ( error || code !== 0 ) {
+                throw new Error(`Failed to run ${args.join(" ")} code=${code} error=${error}`);
+            }
         }
+        try {
+            process.chdir(useRepoDir);
+            consola.info(chalk.green(`Switched to a directory: ${process.cwd()}`));
+        } catch (err) {
+            consola.error(`chdir: ${err}`);
+        }
+        {
+            const cmd = "npm";
+            const args = ["install"];
+            consola.debug("calling ...", {cmd, args});
+            const results = await miscm.pspawn(cmd, args, {stdio: "inherit", shell: true});
+            consola.debug("results", results);
+            const { code, error } = results;
+            if ( error || code !== 0 ) {
+                throw new Error(`Failed to run ${cmd} ${args.join(" ")}`);
+            }
+        }
+        const currentDir = process.cwd();
+        consola.info(`Current directory: ${currentDir}`);
+        await verificationHandler(currentDir);
+    } finally {
+        consola.info(`Cleaning up ${useRepoDir}`);
+        await rimrafp(useRepoDir);
     }
-    const currentDir = process.cwd();
-    consola.info(`Current directory: ${currentDir}`);
-    await verificationHandler(currentDir);
 }
