@@ -34,7 +34,7 @@ Your `package.json` file must include `dhis2-component-search` keyword as follow
 
 ```json
 {
-  "keyword": [
+  "keywords": [
       "dhis2-component-search"
   ]
 }
@@ -64,9 +64,9 @@ The `dhis2ComponentSearch` property of a `package.json` file includes the inform
 The `dhis2ComponentSearch` property must include key/value pairs for framework (using `language` key, we currently support `react` and `angular`), and components. The `component` property, in turn, takes an array of component objects. Each component object must include following information defined as key/value pairs:
 
 __Required__:
-* The `name` property contains a name of the exported component
-* The `export` property contains an export of the exported component
-* The `description` property contains description of the exported component
+* The `name` property contains a name of the exported component.
+* The `export` property contains an export of the exported component. This needs to match the actual export in the code.
+* The `description` property contains description of the exported component.
 
 __Optional__:
 
@@ -97,7 +97,7 @@ Inside your `package.json`, the `dhis2ComponentSearch` property may look somethi
 ### 1.4 Components as commonJS modules
 
 Our verification process requires your components to be distributed as [commonJS modules](https://en.wikipedia.org/wiki/CommonJS). The command `npm install` should result in a valid commonJS module.
-One good way to achieve this is with the help of [create-react-library](https://www.npmjs.com/package/create-react-library) CLI, as it bundles `commonjs` and `es` module formats.
+One good way to achieve this is with the help of [@dhis2/cli-app-scripts](https://platform.dhis2.nu/#/), as it bundles `commonjs` and `es` module formats. A simple [boilerplate](https://github.com/haheskja/scp-react-boilerplate) can help you get started. Another good way is to build the library with [create-react-library](https://www.npmjs.com/package/create-react-library).
 
 ### 1.5 NPM and Github
 
