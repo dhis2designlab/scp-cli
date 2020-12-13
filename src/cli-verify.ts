@@ -129,42 +129,6 @@ export async function verificationHandler(packageDir: string): Promise<void> {
         consola.info(chalk.green(`Verification passed`));
         process.exitCode = 0;
     }
-
-    // Executes all promises in parallell and waits upon completion of all to write results.
-    /*
-    const promises = [
-        componentHandler(packageDetails, errors, specifiedComponents),
-        packageLinter(packageDir, warnings, successes),
-        npmAuditor(warnings, successes, module)
-     ]
- 
-     Promise.all(promises).then(() => {
-         if (successes.list.length) {
-             for (const success of successes.list) {
-                 consola.info(chalk.green(`${success.text}`));
-             }
-         }
-     
-         if (warnings.list.length) {
-             for (const warning of warnings.list) {
-                 consola.info(chalk.yellow(`${warning.text}`));
-             }
-         }
-     
-         if (errors.list.length) {
-             for (const error of errors.list) {
-                 consola.error(chalk.red(`Found error: ${error.text}`));
-             }
-             process.exitCode = 1;
-         } else {
-             consola.info(chalk.green(`Verification passed`));
-             process.exitCode = 0;
-         }
-     }).catch((err) => {
-         consola.error(chalk.red(err.message)); //all should resolve atm.
-     })
- 
-     */
 }
 
 export interface SpecifiedComponent {
@@ -265,15 +229,6 @@ export async function versionValidate(versions: string[]): Promise<void> {
 }
 
 export async function packageLinter(packageDir: string, test: boolean): Promise<void> {
-    //Some potential default values, almost impossible to realize
-    /*
-        "--ignore-pattern 'node_modules/'", 
-        "--ignore-pattern 'dist/'",
-        "--parser-options=ecmaVersion:6",
-        "--env es6",
-        "--parser-options=sourceType:module",
-        "--fix-dry-run",
-    */
     let stdioValue = "inherit";
     if (test) {
         stdioValue = "ignore";
@@ -283,11 +238,10 @@ export async function packageLinter(packageDir: string, test: boolean): Promise<
     consola.debug(`running ${cmd} ${args}`);
     const results = await miscm.pspawn(cmd, args, { stdio: stdioValue, shell: true });
     const { code, signal, stdout, stderr, error } = results;
-    if (error || code === 2) {
-        consola.warn(`Failure when linting package directory ${packageDir}: failed with code ${error || code}.`); //Verification still passes
-    } else if (code !== 0) {
-        //assumes code 1, only one left
+    if (code === 1) {
         consola.warn(`Linting of package directory ${packageDir} completed successfully, but atleast 1 error was found. Exit code ${code}`);
+    } else if (error || code !== 0) {
+        consola.warn(`Failure when linting package directory ${packageDir}: failed with code ${error || code}.`); //Verification still passes
     } else {
         consola.info(chalk.green(`eslint successfully completed.`));
     }
