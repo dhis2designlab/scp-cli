@@ -43,7 +43,7 @@ Your `package.json` file must include `dhis2-component-search` keyword as follow
 ### 1.2 Repository
 
 Currently we only support packages hosted on Github.
-Your `package.json` file must include `repository` property, that includes key/value pairs for repository type and url. 
+Your `package.json` file must include `repository` property, that includes key/value pairs for repository type and url. This must be the HTTPS url, not SSH.
 Inside your `package.json`it would look like this:
 
 ```json
