@@ -5,6 +5,7 @@ This NPM package helps you to create NPM packages with React components that can
 This package provides a command line interface `dhis2-scp-cli` with various commands.
 
 * `dhis2-scp-cli verify`: This command will check the quality of your npm package.
+* `dhis2-scp-cli pr-verify`: This command is run during the whitelist pipeline. Not meant to be used directly.
 
 The command will do the following:
 
@@ -23,6 +24,9 @@ This package uses the following technology:
 * [TypeScript](https://www.typescriptlang.org/)
 * [yargs](https://yargs.js.org/)
 
+## Depends upon (during `pr-verify`)
+* Unpkg - for fetching the package.json file from the published package.
+* GitHub - for cloning source repo and performing further verification.
 
 # Package verification guide
 
@@ -69,7 +73,6 @@ __Required__:
 * The `description` property contains description of the exported component.
 
 __Optional__:
-
 * The `dhis2Version` optional property contains the DHIS2 versions supported by the exported component, the versions must be specified as an array of strings.
 
 Inside your `package.json`, the `dhis2ComponentSearch` property may look something like this:
@@ -94,9 +97,9 @@ Inside your `package.json`, the `dhis2ComponentSearch` property may look somethi
 }
 ```
 
-### 1.4 Components as commonJS modules
+### 1.4 Components as commonJS or ES modules
 
-Our verification process requires your components to be distributed as [commonJS modules](https://en.wikipedia.org/wiki/CommonJS). The command `npm install` should result in a valid commonJS module.
+Our verification process requires your components to be distributed as [commonJS modules](https://en.wikipedia.org/wiki/CommonJS) or [ES modules](https://en.wikipedia.org/wiki/ECMAScript). The command `npm install` should result in a valid module.
 One good way to achieve this is with the help of [@dhis2/cli-app-scripts](https://platform.dhis2.nu/#/), as it bundles `commonjs` and `es` module formats. A simple [boilerplate](https://github.com/haheskja/scp-react-boilerplate) can help you get started. Another good way is to build the library with [create-react-library](https://www.npmjs.com/package/create-react-library).
 
 ### 1.5 NPM and Github
