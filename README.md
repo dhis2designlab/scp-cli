@@ -5,6 +5,7 @@ This NPM package helps you to create NPM packages with React components that can
 This package provides a command line interface `dhis2-scp-cli` with various commands.
 
 * `dhis2-scp-cli verify`: This command will check the quality of your npm package.
+* `dhis2-scp-cli pr-verify`: This command is run during the whitelist pipeline. Not meant to be used directly.
 
 The command will do the following:
 
@@ -23,6 +24,9 @@ This package uses the following technology:
 * [TypeScript](https://www.typescriptlang.org/)
 * [yargs](https://yargs.js.org/)
 
+## Depends upon (during `pr-verify`)
+* Unpkg - for fetching the package.json file from the published package.
+* GitHub - for cloning source repo and performing further verification.
 
 # Package verification guide
 
@@ -34,7 +38,7 @@ Your `package.json` file must include `dhis2-component-search` keyword as follow
 
 ```json
 {
-  "keyword": [
+  "keywords": [
       "dhis2-component-search"
   ]
 }
@@ -43,7 +47,7 @@ Your `package.json` file must include `dhis2-component-search` keyword as follow
 ### 1.2 Repository
 
 Currently we only support packages hosted on Github.
-Your `package.json` file must include `repository` property, that includes key/value pairs for repository type and url. 
+Your `package.json` file must include `repository` property, that includes key/value pairs for repository type and url. This must be the HTTPS url, not SSH.
 Inside your `package.json`it would look like this:
 
 ```json
@@ -64,12 +68,11 @@ The `dhis2ComponentSearch` property of a `package.json` file includes the inform
 The `dhis2ComponentSearch` property must include key/value pairs for framework (using `language` key, we currently support `react` and `angular`), and components. The `component` property, in turn, takes an array of component objects. Each component object must include following information defined as key/value pairs:
 
 __Required__:
-* The `name` property contains a name of the exported component
-* The `export` property contains an export of the exported component
-* The `description` property contains description of the exported component
+* The `name` property contains a name of the exported component.
+* The `export` property contains an export of the exported component. This needs to match the actual export in the code.
+* The `description` property contains description of the exported component.
 
 __Optional__:
-
 * The `dhis2Version` optional property contains the DHIS2 versions supported by the exported component, the versions must be specified as an array of strings.
 
 Inside your `package.json`, the `dhis2ComponentSearch` property may look something like this:
@@ -94,10 +97,10 @@ Inside your `package.json`, the `dhis2ComponentSearch` property may look somethi
 }
 ```
 
-### 1.4 Components as commonJS modules
+### 1.4 Components as commonJS or ES modules
 
-Our verification process requires your components to be distributed as [commonJS modules](https://en.wikipedia.org/wiki/CommonJS). The command `npm install` should result in a valid commonJS module.
-One good way to achieve this is with the help of [create-react-library](https://www.npmjs.com/package/create-react-library) CLI, as it bundles `commonjs` and `es` module formats.
+Our verification process requires your components to be distributed as [commonJS modules](https://en.wikipedia.org/wiki/CommonJS) or [ES modules](https://en.wikipedia.org/wiki/ECMAScript). The command `npm install` should result in a valid module.
+One good way to achieve this is with the help of [@dhis2/cli-app-scripts](https://platform.dhis2.nu/#/), as it bundles `commonjs` and `es` module formats. A simple [boilerplate](https://github.com/haheskja/scp-react-boilerplate) can help you get started. Another good way is to build the library with [create-react-library](https://www.npmjs.com/package/create-react-library).
 
 ### 1.5 NPM and Github
 
