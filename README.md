@@ -1,5 +1,7 @@
 # DHIS2 SCP CLI
 
+This documentation is part of Bengtsson, A. (2021). Facilitating Software Reuse. Using Design Science Research To Develop Design Principles For Implementing A Component Repository (Unpublished master's thesis). University of Oslo, Norway.
+
 This NPM package helps you to create NPM packages with React components that can be used to build DHIS2 apps or other components.
 
 This package provides a command line interface `dhis2-scp-cli` with various commands.
