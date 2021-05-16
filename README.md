@@ -1,7 +1,8 @@
 # DHIS2 SCP CLI
 
 This documentation is part of Bengtsson, A. (2021). Facilitating Software Reuse. Using Design Science Research To Develop Design Principles For Implementing A Component Repository (Unpublished master's thesis). University of Oslo, Norway.
-This documentation is additionally a part of Heskja, H. A. (2021). Enabling software component reuse in enterprise software platform ecosystems (Unpublished master's thesis). University of Oslo.
+
+This documentation is additionally a part of Heskja, H. A. (2021). Enabling software component reuse in enterprise software platform ecosystems (Unpublished master's thesis). University of Oslo, Norway.
 
 
 This NPM package helps you to create NPM packages with React components that can be used to build DHIS2 apps or other components.
